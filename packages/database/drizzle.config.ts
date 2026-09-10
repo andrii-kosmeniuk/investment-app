@@ -8,6 +8,7 @@ export default defineConfig({
   // migration execution still fail closed when DATABASE_URL is absent.
   dbCredentials: {
     url:
+      process.env.DATABASE_URL_UNPOOLED ??
       process.env.DATABASE_URL ??
       "postgresql://generation-only:generation-only@localhost/generation-only",
   },

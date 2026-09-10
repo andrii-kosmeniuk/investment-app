@@ -1,56 +1,45 @@
-import { type CustomerLedgerAccounts, postingPatterns } from "@corgi/domain";
 import { describe, expect, it } from "vitest";
 import {
   type InboxEvent,
   type InboxHandler,
-  type InboxProcessorDeps,
   processInboxBatch,
+  recordTransferEvent,
 } from "../src/index.js";
 import {
   InMemoryInboxRepository,
   InMemoryLedgerRepository,
   fixedClock,
   sequentialIds,
+  staticResolver,
 } from "./fakes.js";
 
-const customer: CustomerLedgerAccounts = {
-  settledCash: "cust:settled",
-  pendingDeposit: "cust:pending",
-  unsettledBuys: "cust:unsettled-buys",
-  unsettledSells: "cust:unsettled-sells",
-  dividendReceivable: "cust:div-recv",
-  bounceRecovery: "cust:bounce",
-  dividendIncome: "cust:div-income",
-  feeExpense: "cust:fee",
-  position: (symbol) => `cust:pos:${symbol}`,
-};
+interface TransferPayload {
+  customerId: string;
+  transferId: string;
+  amountCents: string;
+}
 
-const settledHandler: InboxHandler = (event) => {
-  const payload = event.payload as { externalId: string; amountCents: string };
-  return [
-    {
-      idempotencyKey: `plaid:transfer.settled:${payload.externalId}`,
-      kind: "deposit_settled",
-      effectiveAt: event.receivedAt,
-      source: "plaid",
-      sourceRef: payload.externalId,
-      description: "ACH settled",
-      postings: postingPatterns.depositSettled(customer, BigInt(payload.amountCents)),
-    },
-  ];
-};
-
-function makeDeps(): InboxProcessorDeps & {
-  ledger: InMemoryLedgerRepository;
-  inbox: InMemoryInboxRepository;
-} {
-  return {
-    inbox: new InMemoryInboxRepository(),
-    ledger: new InMemoryLedgerRepository(),
+function makeDeps() {
+  const inbox = new InMemoryInboxRepository();
+  const ledger = new InMemoryLedgerRepository();
+  const ledgerDeps = {
+    ledger,
     clock: fixedClock("2026-09-03T14:30:00Z"),
     ids: sequentialIds(),
-    handlers: new Map([["transfer.settled", settledHandler]]),
+    resolver: staticResolver(),
   };
+  const handler: InboxHandler = async (event) => {
+    const payload = event.payload as TransferPayload;
+    await recordTransferEvent(ledgerDeps, {
+      customerId: payload.customerId,
+      transferId: payload.transferId,
+      kind: "settled",
+      amountCents: BigInt(payload.amountCents),
+      occurredAt: event.receivedAt,
+    });
+  };
+  const handlers = new Map<string, InboxHandler>([["transfer.settled", handler]]);
+  return { inbox, ledger, deps: { inbox, handlers } };
 }
 
 function event(overrides: Partial<InboxEvent> & Pick<InboxEvent, "dedupeKey">): InboxEvent {
@@ -58,7 +47,7 @@ function event(overrides: Partial<InboxEvent> & Pick<InboxEvent, "dedupeKey">): 
     provider: "plaid",
     externalId: "tr_1",
     type: "transfer.settled",
-    payload: { externalId: "tr_1", amountCents: "100000" },
+    payload: { customerId: "cust-1", transferId: "tr_1", amountCents: "100000" },
     signatureValid: true,
     receivedAt: new Date("2026-09-03T14:30:00Z"),
     ...overrides,
@@ -73,23 +62,20 @@ describe("inbox processor", () => {
   });
 
   it("applies the same settlement seen on two channels exactly once", async () => {
-    const deps = makeDeps();
-    // Same transfer reported by both a webhook and an SSE event: distinct
-    // dedupe keys at ingress, but one shared ledger idempotency key.
-    await deps.inbox.receive(event({ dedupeKey: "plaid:webhook:a" }));
-    await deps.inbox.receive(event({ dedupeKey: "plaid:sse:b" }));
+    const { inbox, ledger, deps } = makeDeps();
+    await inbox.receive(event({ dedupeKey: "plaid:webhook:a" }));
+    await inbox.receive(event({ dedupeKey: "plaid:sse:b" }));
 
     const result = await processInboxBatch(deps, 10);
 
     expect(result.leased).toBe(2);
     expect(result.processed).toBe(2);
-    expect(result.duplicateEffects).toBe(1);
-    expect(deps.ledger.all).toHaveLength(1);
+    expect(ledger.all).toHaveLength(1);
   });
 
   it("does not re-lease already-processed events", async () => {
-    const deps = makeDeps();
-    await deps.inbox.receive(event({ dedupeKey: "k1" }));
+    const { inbox, deps } = makeDeps();
+    await inbox.receive(event({ dedupeKey: "k1" }));
 
     const first = await processInboxBatch(deps, 10);
     const second = await processInboxBatch(deps, 10);
@@ -99,16 +85,16 @@ describe("inbox processor", () => {
   });
 
   it("fails events with no handler or an invalid signature", async () => {
-    const deps = makeDeps();
-    await deps.inbox.receive(event({ dedupeKey: "unknown", type: "mystery.event" }));
-    await deps.inbox.receive(event({ dedupeKey: "unsigned", signatureValid: false }));
+    const { inbox, ledger, deps } = makeDeps();
+    await inbox.receive(event({ dedupeKey: "unknown", type: "mystery.event" }));
+    await inbox.receive(event({ dedupeKey: "unsigned", signatureValid: false }));
 
     const result = await processInboxBatch(deps, 10);
 
     expect(result.failed).toBe(2);
     expect(result.processed).toBe(0);
-    expect(deps.ledger.all).toHaveLength(0);
-    expect(deps.inbox.failures.get("unknown")).toMatch(/no handler/);
-    expect(deps.inbox.failures.get("unsigned")).toMatch(/signature/);
+    expect(ledger.all).toHaveLength(0);
+    expect(inbox.failures.get("unknown")).toMatch(/no handler/);
+    expect(inbox.failures.get("unsigned")).toMatch(/signature/);
   });
 });

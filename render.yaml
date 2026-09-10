@@ -51,7 +51,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        sync: false
+        sync: false # Neon pooled URL (HTTP reads)
+      - key: DATABASE_URL_UNPOOLED
+        sync: false # Neon direct URL (ledger transactions)
       - key: ALPACA_KEY
         sync: false
       - key: ALPACA_SECRET

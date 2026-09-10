@@ -33,6 +33,9 @@ export async function registerWebhookRoutes(
         ? request.rawBody
         : request.rawBody?.toString("utf8");
     const signature = request.headers["persona-signature"];
+    if (!config.PERSONA_WEBHOOK_SECRET) {
+      return reply.code(503).send({ error: "persona_not_configured" });
+    }
     if (!rawBody || typeof signature !== "string") return reply.code(401).send({ error: "invalid_signature" });
     const valid = verifyPersonaWebhook({
       rawBody,
@@ -42,9 +45,12 @@ export async function registerWebhookRoutes(
     if (!valid) return reply.code(401).send({ error: "invalid_signature" });
     const body = JSON.parse(rawBody) as EventBody;
     const identity = eventIdentity(body);
+    // Normalize to the canonical KYC event; the worker parses the reference id
+    // and status from the stored payload and advances the customer's KYC gate.
     const status = await services.inbox.receive({
       provider: "persona",
-      ...identity,
+      externalId: identity.externalId,
+      eventType: "kyc.updated",
       dedupeKey: `persona:${identity.externalId}`,
       payload: body,
       signatureValid: true,
@@ -58,6 +64,9 @@ export async function registerWebhookRoutes(
         ? request.rawBody
         : request.rawBody?.toString("utf8");
     const signedJwt = request.headers["plaid-verification"];
+    if (!config.PLAID_CLIENT_ID || !config.PLAID_SECRET) {
+      return reply.code(503).send({ error: "plaid_not_configured" });
+    }
     if (!rawBody || typeof signedJwt !== "string") return reply.code(401).send({ error: "invalid_signature" });
     const valid = await verifyPlaidWebhook({
       rawBody,
@@ -78,15 +87,9 @@ export async function registerWebhookRoutes(
       },
     });
     if (!valid) return reply.code(401).send({ error: "invalid_signature" });
-    const body = JSON.parse(rawBody) as EventBody;
-    const identity = eventIdentity(body);
-    const status = await services.inbox.receive({
-      provider: "plaid",
-      ...identity,
-      dedupeKey: `plaid:${identity.externalId}`,
-      payload: body,
-      signatureValid: true,
-    });
-    return reply.send({ status });
+    // Plaid transfer webhooks are only a nudge — they carry no authoritative
+    // transfer state. The worker pulls the real events from
+    // /transfer/event/sync, so here we just verify the signature and ack.
+    return reply.send({ status: "acknowledged" });
   });
 }

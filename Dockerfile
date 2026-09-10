@@ -34,12 +34,14 @@ CMD ["node", "apps/web/server.js"]
 
 FROM node:22-slim AS api
 ENV NODE_ENV=production
+ENV HOST=0.0.0.0
 WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/packages ./packages
+EXPOSE 4000
 USER node
 CMD ["node", "apps/api/dist/server.js"]
 
@@ -48,3 +50,7 @@ COPY --from=build /app/apps/worker/node_modules ./apps/worker/node_modules
 COPY --from=build /app/apps/worker/dist ./apps/worker/dist
 COPY --from=build /app/apps/worker/package.json ./apps/worker/package.json
 CMD ["node", "apps/worker/dist/main.js"]
+
+# Render/Docker use the last stage when no --target is set. This web service
+# must boot the HTTP API, not the Alpaca worker.
+FROM api

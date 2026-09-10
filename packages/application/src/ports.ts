@@ -1,9 +1,13 @@
 import type {
   AppendableEntry,
   ApprovalRequest,
+  ClearingAccounts,
+  CustomerLedgerAccounts,
   JournalEntry,
+  LotAvailability,
   OrderState,
   ReconBreak,
+  TaxLot,
 } from "@corgi/domain";
 
 export interface UnitOfWork {
@@ -111,6 +115,69 @@ export interface ProviderEvent {
 export interface ApprovalRepository {
   create(request: ApprovalRequest): Promise<void>;
   listPending(): Promise<readonly ApprovalRequest[]>;
+}
+
+export type KycStatus = "not_started" | "pending" | "needs_review" | "approved" | "declined";
+
+export interface CustomerRecord {
+  readonly id: string;
+  readonly kycStatus: KycStatus;
+  readonly tradingBlocked: boolean;
+  readonly brokerAccountId: string | null;
+}
+
+export interface CustomerRepository {
+  findById(id: string): Promise<CustomerRecord | null>;
+  setKycStatus(id: string, status: KycStatus, tradingBlocked: boolean): Promise<void>;
+}
+
+export interface OrderRecord {
+  readonly id: string;
+  readonly customerId: string;
+  readonly clientOrderId: string;
+  readonly providerOrderId: string | null;
+  readonly symbol: string;
+  readonly side: "buy" | "sell";
+  readonly state: OrderState;
+  readonly cumulativeFilledUnitsMicro: bigint;
+}
+
+export interface OrderRepository {
+  create(order: {
+    id: string;
+    customerId: string;
+    clientOrderId: string;
+    providerOrderId: string | null;
+    symbol: string;
+    side: "buy" | "sell";
+    state: OrderState;
+    requestedNotionalCents: bigint;
+  }): Promise<void>;
+  findByClientOrderId(clientOrderId: string): Promise<OrderRecord | null>;
+  findByProviderOrderId(providerOrderId: string): Promise<OrderRecord | null>;
+  recordFill(input: {
+    orderId: string;
+    externalId: string;
+    state: OrderState;
+    cumulativeFilledUnitsMicro: bigint;
+    payload: unknown;
+    occurredAt: Date;
+  }): Promise<void>;
+}
+
+export interface TaxLotRepository {
+  open(lot: TaxLot): Promise<void>;
+  availableLots(customerId: string, symbol: string): Promise<readonly LotAvailability[]>;
+}
+
+/**
+ * Resolves the stable ledger account IDs for a customer and the firm. The
+ * caller declares which position symbols it needs so per-symbol accounts can be
+ * ensured up front, keeping the returned `position()` lookup synchronous.
+ */
+export interface AccountResolver {
+  forCustomer(customerId: string, symbols: readonly string[]): Promise<CustomerLedgerAccounts>;
+  clearing(symbols: readonly string[]): Promise<ClearingAccounts>;
 }
 
 export interface ReconciliationRepository {

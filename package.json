@@ -1,12 +1,15 @@
 {
   "name": "corgi-invest",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@12.3.4",
   "engines": {
     "node": ">=22.12"
   },
   "dependencies": {
-    "@corgi/database": "workspace:*"
+    "@corgi/database": "workspace:*",
+    "@neon/config": "^1.3.2",
+    "@neon/env": "^1.2.3"
   },
   "scripts": {
     "build": "turbo build",
@@ -16,7 +19,7 @@
     "typecheck": "turbo typecheck",
     "db:generate": "pnpm --filter @corgi/database generate",
     "db:migrate": "pnpm --filter @corgi/database migrate",
-    "seed": "tsx scripts/seed.ts",
+    "seed": "tsx --env-file=.env scripts/seed.ts",
     "check:decisions": "tsx scripts/check-decisions.ts"
   },
   "devDependencies": {

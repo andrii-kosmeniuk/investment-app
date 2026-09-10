@@ -13,8 +13,20 @@ if (!configurable.webSocketConstructor && globalWebSocket) {
   configurable.webSocketConstructor = globalWebSocket;
 }
 
-export function createPool(url = process.env.DATABASE_URL): Pool {
-  if (!url) throw new Error("DATABASE_URL is required");
+/**
+ * Interactive transactions (advisory lock + deferred balance check) need a
+ * real Postgres session. Neon's pooled host is PgBouncer in transaction mode
+ * and cannot hold that session, so the write path prefers the direct URL.
+ */
+export function writeConnectionUrl(
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  const url = env.DATABASE_URL_UNPOOLED ?? env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL or DATABASE_URL_UNPOOLED is required");
+  return url;
+}
+
+export function createPool(url = writeConnectionUrl()): Pool {
   return new Pool({ connectionString: url });
 }
 

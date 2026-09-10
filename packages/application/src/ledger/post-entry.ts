@@ -2,6 +2,8 @@ import { assertBalanced, type LedgerSource, type Posting } from "@corgi/domain";
 import type { AppendResult, Clock, IdGenerator, LedgerRepository } from "../ports.js";
 
 export interface PostJournalEntryCommand {
+  /** Optional caller-supplied entry id, e.g. to link a tax lot to its entry. */
+  readonly id?: string;
   /** Deduplicates the economic event, e.g. `plaid:transfer.settled:tr_123`. */
   readonly idempotencyKey: string;
   readonly kind: string;
@@ -36,7 +38,7 @@ export async function postJournalEntry(
 
   const postedAt = command.postedAt ?? deps.clock.now();
   return deps.ledger.append({
-    id: deps.ids.next(),
+    id: command.id ?? deps.ids.next(),
     idempotencyKey: command.idempotencyKey,
     kind: command.kind,
     effectiveAt: command.effectiveAt,
