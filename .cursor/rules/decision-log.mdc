@@ -1,0 +1,18 @@
+---
+description: Keep architectural decisions and assumptions contemporaneous with implementation
+alwaysApply: true
+---
+
+# Decision log discipline
+
+- Before implementing a material architectural or financial-domain decision,
+  check `docs/decisions/` for an existing ADR.
+- If none exists, run `scripts/adr.sh "<short title>"`, complete the ADR, and
+  include it in the same change as its implementation.
+- Log assumptions when the brief or a provider is ambiguous. If Corgi later
+  answers differently, add a superseding ADR; never erase the earlier decision.
+- Add cuts to `docs/decisions/CUT_LIST.md` when they are made, not at freeze.
+- Mention the ADR in the eventual commit message: `[ADR-NNNN]`.
+- Do not log implementation trivia. Log decisions a reviewer can reasonably ask
+  “why?” about: dimensions, accounting, time semantics, algorithms, thresholds,
+  provider behavior, security boundaries, and scope cuts.

@@ -1,0 +1,14 @@
+.git
+.cursor
+.agents
+.impeccable
+.cache
+.pnpm
+.turbo
+**/.next
+**/dist
+**/node_modules
+.env*
+!.env.example
+coverage
+custodian-files

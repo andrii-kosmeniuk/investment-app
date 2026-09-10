@@ -1,0 +1,29 @@
+{
+  "name": "@corgi/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": { "types": "./src/index.ts", "default": "./dist/index.js" },
+    "./money": { "types": "./src/money/index.ts", "default": "./dist/money/index.js" },
+    "./ledger": { "types": "./src/ledger/index.ts", "default": "./dist/ledger/index.js" },
+    "./lots": { "types": "./src/lots/index.ts", "default": "./dist/lots/index.js" },
+    "./returns": { "types": "./src/returns/index.ts", "default": "./dist/returns/index.js" },
+    "./approvals": { "types": "./src/approvals/index.ts", "default": "./dist/approvals/index.js" },
+    "./reconciliation": { "types": "./src/reconciliation/index.ts", "default": "./dist/reconciliation/index.js" },
+    "./orders": { "types": "./src/orders/index.ts", "default": "./dist/orders/index.js" },
+    "./rebalance": { "types": "./src/rebalance/index.ts", "default": "./dist/rebalance/index.js" },
+    "./settlement": { "types": "./src/settlement/index.ts", "default": "./dist/settlement/index.js" },
+    "./valuation": { "types": "./src/valuation/index.ts", "default": "./dist/valuation/index.js" }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  }
+}
