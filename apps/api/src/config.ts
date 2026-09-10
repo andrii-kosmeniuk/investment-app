@@ -28,7 +28,10 @@ const schema = z.object({
   ALPACA_BROKER_BASE_URL: z.string().url().default("https://broker-api.sandbox.alpaca.markets"),
   ALPACA_KEY: optionalSecret,
   ALPACA_SECRET: optionalSecret,
+  ALPACA_MARKET_DATA_BASE_URL: z.string().url().default("https://data.sandbox.alpaca.markets"),
   MCP_API_KEY: z.string().min(24),
+  /** Operator token for the live-fire console and restatement audit; unset → those routes answer 503. */
+  LIVE_FIRE_TOKEN: z.string().min(24).optional(),
 });
 
 export type ApiConfig = z.infer<typeof schema>;

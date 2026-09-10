@@ -89,6 +89,74 @@ export const modelsResponse = z.object({ models: z.array(modelResponse) });
 
 export const priceStatus = z.enum(["final", "stale"]);
 
+/* ------------------------------------------------------------------ */
+/* Performance — versioned valuations and returns (ADR-0004)           */
+/* ------------------------------------------------------------------ */
+
+export const valuationStatus = z.enum(["final", "provisional"]);
+export const returnPeriod = z.enum(["mtd", "ytd", "inception"]);
+
+/** "Restated on <at> · was <previous>": present only when a visible earlier version showed a different number. */
+const restatedNumber = z.object({ at: isoTimestamp, previous: z.number(), reason: z.string().nullable() }).nullable();
+const restatedCents = z.object({ at: isoTimestamp, previous: integerString, reason: z.string().nullable() }).nullable();
+
+export const periodReturnResponse = z.object({
+  period: returnPeriod,
+  periodStart: isoDate,
+  periodEnd: isoDate,
+  /** Time-weighted return as a fraction (0.0341 = +3.41%). */
+  twr: z.number(),
+  /** Modified Dietz (money-weighted) as a fraction; null when nothing was invested. */
+  mwr: z.number().nullable(),
+  flowsCents: integerString,
+  version: z.number().int().positive(),
+  restated: restatedNumber,
+});
+
+export const performanceResponse = z.object({
+  asOfDate: isoDate,
+  valueCents: integerString,
+  status: valuationStatus,
+  version: z.number().int().positive(),
+  computedAt: isoTimestamp,
+  restated: restatedCents,
+  returns: z.array(periodReturnResponse),
+});
+
+export const valuationPointResponse = z.object({
+  asOfDate: isoDate,
+  valueCents: integerString,
+  cashCents: integerString,
+  status: valuationStatus,
+  version: z.number().int().positive(),
+  computedAt: isoTimestamp,
+  reason: z.string().nullable(),
+});
+
+/** Statement view: the series and headline figures as known at a chosen publication date. */
+export const statementResponse = z.object({
+  /** The as-published date requested, or null for "current". */
+  asPublishedOn: isoDate.nullable(),
+  /** Knowledge cut-off actually applied. */
+  publishedAt: isoTimestamp,
+  performance: performanceResponse.nullable(),
+  series: z.array(valuationPointResponse),
+  /** Every superseding version of this customer's figures, newest first. */
+  restatements: z.array(
+    z.object({
+      kind: z.enum(["valuation", "return"]),
+      asOfDate: isoDate,
+      period: returnPeriod.nullable(),
+      version: z.number().int().positive(),
+      computedAt: isoTimestamp,
+      reason: z.string().nullable(),
+      /** Decimal-string cents for valuations, fraction for returns — rendered per kind. */
+      from: z.string(),
+      to: z.string(),
+    }),
+  ),
+});
+
 export const portfolioResponse = z.object({
   customerId: z.string().uuid(),
   /** Business date the balances and prices refer to. */
@@ -108,14 +176,8 @@ export const portfolioResponse = z.object({
     availableToInvestCents: integerString,
     availableToWithdrawCents: integerString,
   }),
-  /** Null until the first period return has been computed. */
-  return: z
-    .object({
-      period: z.string().min(1),
-      twr: z.number(),
-      priorPublishedTwr: z.number().nullable(),
-    })
-    .nullable(),
+  /** Latest stored valuation and period returns; null until the first nightly run. */
+  performance: performanceResponse.nullable(),
   model: z.object({ code: z.string().min(1), name: z.string().min(1) }).nullable(),
   positions: z.array(
     z.object({
@@ -245,6 +307,72 @@ export const apiError = z.object({
 });
 
 /* ------------------------------------------------------------------ */
+/* Operations — live-fire console and restatement audit (ADR-0004)     */
+/* ------------------------------------------------------------------ */
+
+const decimalPrice = z.string().trim().regex(/^\d+(\.\d{1,8})?$/);
+const positiveIntegerString = z.string().regex(/^[1-9]\d*$/);
+
+export const correctedCloseRequest = z.object({
+  symbol: z.string().min(1).max(12).toUpperCase(),
+  tradeDate: isoDate,
+  close: decimalPrice,
+});
+
+export const lateDividendRequest = z.object({
+  customerId: z.string().uuid(),
+  symbol: z.string().min(1).max(12).toUpperCase(),
+  exDate: isoDate,
+  payDate: isoDate,
+  amountCents: positiveIntegerString,
+});
+
+export const stockSplitRequest = z.object({
+  customerId: z.string().uuid(),
+  symbol: z.string().min(1).max(12).toUpperCase(),
+  numerator: positiveIntegerString,
+  denominator: positiveIntegerString,
+  effectiveDate: isoDate,
+});
+
+export const runValuationRequest = z.object({
+  from: isoDate,
+  to: isoDate,
+  customerId: z.string().uuid().optional(),
+});
+
+export const collectClosesRequest = z.object({ from: isoDate, to: isoDate });
+
+export const restatementSummary = z.object({
+  customerId: z.string().uuid(),
+  fromDate: isoDate,
+  reason: z.string(),
+  dates: z.array(isoDate),
+  valuationsRewritten: z.number().int().nonnegative(),
+  returnsRewritten: z.number().int().nonnegative(),
+});
+
+export const liveFireResponse = z.object({
+  action: z.enum(["corrected_close", "late_dividend", "stock_split", "run_valuation", "collect_closes"]),
+  summary: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
+  restatements: z.array(restatementSummary),
+});
+
+export const restatementAuditRow = z.object({
+  kind: z.enum(["valuation", "return"]),
+  customerId: z.string().uuid(),
+  asOfDate: isoDate,
+  period: returnPeriod.nullable(),
+  version: z.number().int().positive(),
+  computedAt: isoTimestamp,
+  reason: z.string().nullable(),
+  from: z.string(),
+  to: z.string(),
+});
+
+export const restatementsResponse = z.object({ rows: z.array(restatementAuditRow) });
+
+/* ------------------------------------------------------------------ */
 /* Operations (unchanged from the earlier block)                       */
 /* ------------------------------------------------------------------ */
 
@@ -291,6 +419,19 @@ export type VerificationSessionResponse = z.infer<typeof verificationSessionResp
 export type ModelResponse = z.infer<typeof modelResponse>;
 export type ModelsResponse = z.infer<typeof modelsResponse>;
 export type PortfolioResponse = z.infer<typeof portfolioResponse>;
+export type PerformanceResponse = z.infer<typeof performanceResponse>;
+export type PeriodReturnResponse = z.infer<typeof periodReturnResponse>;
+export type ReturnPeriod = z.infer<typeof returnPeriod>;
+export type StatementResponse = z.infer<typeof statementResponse>;
+export type ValuationPointResponse = z.infer<typeof valuationPointResponse>;
+export type LiveFireResponse = z.infer<typeof liveFireResponse>;
+export type RestatementsResponse = z.infer<typeof restatementsResponse>;
+export type RestatementAuditRow = z.infer<typeof restatementAuditRow>;
+export type CorrectedCloseRequest = z.infer<typeof correctedCloseRequest>;
+export type LateDividendRequest = z.infer<typeof lateDividendRequest>;
+export type StockSplitRequest = z.infer<typeof stockSplitRequest>;
+export type RunValuationRequest = z.infer<typeof runValuationRequest>;
+export type CollectClosesRequest = z.infer<typeof collectClosesRequest>;
 export type ChooseModelRequest = z.infer<typeof chooseModelRequest>;
 export type InvestmentResponse = z.infer<typeof investmentResponse>;
 export type ConfirmationRequiredResponse = z.infer<typeof confirmationRequiredResponse>;

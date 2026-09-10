@@ -1,13 +1,21 @@
 import {
   type ActivityResponse,
+  type CollectClosesRequest,
   type ConfirmationRequiredResponse,
+  type CorrectedCloseRequest,
   type InvestmentResponse,
+  type LateDividendRequest,
   type LinkTokenResponse,
+  type LiveFireResponse,
   type MeResponse,
   type ModelsResponse,
   type OnboardingResponse,
   type PortfolioResponse,
+  type RestatementsResponse,
+  type RunValuationRequest,
   type SessionResponse,
+  type StatementResponse,
+  type StockSplitRequest,
   type TransfersResponse,
   type VerificationSessionResponse,
   activityResponse,
@@ -15,11 +23,14 @@ import {
   confirmationRequiredResponse,
   investmentResponse,
   linkTokenResponse,
+  liveFireResponse,
   meResponse,
   modelsResponse,
   onboardingResponse,
   portfolioResponse,
+  restatementsResponse,
   sessionResponse,
+  statementResponse,
   transfersResponse,
   verificationSessionResponse,
 } from "@corgi/contracts";
@@ -119,6 +130,13 @@ export function createApiClient(options: ApiClientOptions) {
       call("POST", "/v1/customer/verification", verificationSessionResponse),
     models: (): Promise<ModelsResponse> => call("GET", "/v1/customer/models", modelsResponse),
     portfolio: (): Promise<PortfolioResponse> => call("GET", "/v1/customer/portfolio", portfolioResponse),
+    /** Figures as the customer saw them on `asPublishedOn` (YYYY-MM-DD); current when omitted. */
+    statement: (asPublishedOn?: string | null): Promise<StatementResponse> =>
+      call(
+        "GET",
+        asPublishedOn ? `/v1/customer/statement?asPublishedOn=${encodeURIComponent(asPublishedOn)}` : "/v1/customer/statement",
+        statementResponse,
+      ),
     chooseModel: (modelCode: string, confirmed: boolean): Promise<InvestmentResponse> =>
       call("POST", "/v1/customer/portfolio/model", investmentResponse, { modelCode, confirmed }),
     activity: (): Promise<ActivityResponse> => call("GET", "/v1/customer/activity", activityResponse),
@@ -129,6 +147,20 @@ export function createApiClient(options: ApiClientOptions) {
       call("POST", "/v1/customer/bank-accounts", linkedBankResponse, input),
     createDeposit: (bankAccountId: string, amount: string) =>
       call("POST", "/v1/customer/transfers/deposits", depositCreatedResponse, { bankAccountId, amount }),
+
+    // Operator surface. The bearer token here is the operator's LIVE_FIRE_TOKEN, never a customer session.
+    restatements: (customerId?: string | null): Promise<RestatementsResponse> =>
+      call("GET", customerId ? `/v1/ops/restatements?customerId=${encodeURIComponent(customerId)}` : "/v1/ops/restatements", restatementsResponse),
+    correctedClose: (input: CorrectedCloseRequest): Promise<LiveFireResponse> =>
+      call("POST", "/v1/ops/live-fire/corrected-close", liveFireResponse, input),
+    lateDividend: (input: LateDividendRequest): Promise<LiveFireResponse> =>
+      call("POST", "/v1/ops/live-fire/late-dividend", liveFireResponse, input),
+    stockSplit: (input: StockSplitRequest): Promise<LiveFireResponse> =>
+      call("POST", "/v1/ops/live-fire/stock-split", liveFireResponse, input),
+    runValuation: (input: RunValuationRequest): Promise<LiveFireResponse> =>
+      call("POST", "/v1/ops/live-fire/run-valuation", liveFireResponse, input),
+    collectCloses: (input: CollectClosesRequest): Promise<LiveFireResponse> =>
+      call("POST", "/v1/ops/live-fire/collect-closes", liveFireResponse, input),
   };
 }
 

@@ -5,7 +5,11 @@
   "type": "module",
   "exports": {
     ".": { "types": "./src/index.ts", "default": "./dist/index.js" },
-    "./ports": { "types": "./src/ports.ts", "default": "./dist/ports.js" }
+    "./ports": { "types": "./src/ports.ts", "default": "./dist/ports.js" },
+    "./testing": {
+      "types": "./src/testing/in-memory-valuation.ts",
+      "default": "./dist/testing/in-memory-valuation.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

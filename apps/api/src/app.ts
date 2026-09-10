@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import type { ApiConfig } from "./config.js";
 import type { ApiServices } from "./services.js";
 import { registerCustomerRoutes } from "./customer/routes.js";
+import { registerOpsRoutes } from "./ops/routes.js";
 import { registerMcpRoute } from "./routes/mcp.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
 
@@ -56,6 +57,7 @@ export async function buildApi(
       await registerMcpRoute(api, services, config);
       // Own plugin scope so the customer error mapping cannot leak into webhooks/MCP.
       await api.register((customerApi) => registerCustomerRoutes(customerApi, services.customer));
+      await api.register((opsApi) => registerOpsRoutes(opsApi, services.customer));
     },
     { prefix: "/v1" },
   );

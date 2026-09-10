@@ -78,6 +78,33 @@ describe("createApiClient", () => {
     await expect(api.me()).rejects.toMatchObject({ code: "contract_mismatch" });
   });
 
+  it("asks for a statement as published on a date and validates the bitemporal shape", async () => {
+    const captured: Captured[] = [];
+    const statement = {
+      asPublishedOn: "2026-09-09",
+      publishedAt: "2026-09-10T03:59:59.999Z",
+      performance: null,
+      series: [{ asOfDate: "2026-09-09", valueCents: "100000", cashCents: "0", status: "final", version: 1, computedAt: "2026-09-10T00:30:00.000Z", reason: "scheduled" }],
+      restatements: [],
+    };
+    const api = createApiClient({ baseUrl: "https://api.test", token: "t", fetch: fakeFetch(200, statement, captured) });
+    const view = await api.statement("2026-09-09");
+    expect(captured[0]?.url).toBe("https://api.test/v1/customer/statement?asPublishedOn=2026-09-09");
+    expect(view.series[0]?.valueCents).toBe("100000");
+    await api.statement(null);
+    expect(captured[1]?.url).toBe("https://api.test/v1/customer/statement");
+  });
+
+  it("uppercases nothing client-side and posts live-fire bodies as typed for the API to validate", async () => {
+    const captured: Captured[] = [];
+    const answer = { action: "corrected_close", summary: { symbol: "VTI", corrected: true }, restatements: [] };
+    const api = createApiClient({ baseUrl: "https://api.test", token: "operator", fetch: fakeFetch(200, answer, captured) });
+    const result = await api.correctedClose({ symbol: "vti", tradeDate: "2026-09-09", close: "296.5" });
+    expect(captured[0]).toMatchObject({ url: "https://api.test/v1/ops/live-fire/corrected-close", method: "POST" });
+    expect(JSON.parse(captured[0]?.body ?? "{}")).toEqual({ symbol: "vti", tradeDate: "2026-09-09", close: "296.5" });
+    expect(result.summary.corrected).toBe(true);
+  });
+
   it("reports unreachable APIs as a network error, not a crash", async () => {
     const failing = (async () => {
       throw new TypeError("fetch failed");

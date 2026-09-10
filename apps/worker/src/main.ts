@@ -15,6 +15,7 @@ import {
 } from "@corgi/database";
 import {
   AlpacaBrokerAdapter,
+  AlpacaMarketDataAdapter,
   PlaidFundingAdapter,
   parsePlaidTransferEvent,
 } from "@corgi/integrations";
@@ -22,6 +23,7 @@ import { eq } from "drizzle-orm";
 import { buildProviderHandlers, canonicalAlpacaType } from "./composition.js";
 import { loadWorkerConfig } from "./config.js";
 import { financialJobs, scheduleJobs } from "./jobs.js";
+import { valuationJobs } from "./valuation-jobs.js";
 
 const config = loadWorkerConfig();
 const logger = pino({ level: config.NODE_ENV === "production" ? "info" : "debug" });
@@ -68,17 +70,26 @@ async function saveCursor(provider: string, cursor: string): Promise<void> {
     });
 }
 
+const valuation = valuationJobs({
+  db,
+  clock,
+  ids,
+  logger,
+  lookbackDays: config.VALUATION_LOOKBACK_DAYS,
+  marketData: new AlpacaMarketDataAdapter({
+    baseUrl: config.ALPACA_MARKET_DATA_BASE_URL,
+    key: config.ALPACA_KEY,
+    secret: config.ALPACA_SECRET,
+  }),
+});
+
 const scheduled = scheduleJobs(
   financialJobs({
     async settleTrades() {
       logger.info("settlement handler boundary ready");
     },
-    async collectClosingPrices() {
-      logger.info("price collection handler boundary ready");
-    },
-    async valuePortfolios() {
-      logger.info("valuation handler boundary ready");
-    },
+    collectClosingPrices: valuation.collectClosingPrices,
+    valuePortfolios: valuation.valuePortfolios,
     async importCustodianFile() {
       logger.info("custodian import handler boundary ready");
     },

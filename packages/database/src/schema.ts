@@ -384,6 +384,8 @@ export const valuations = pgTable(
     cashCents: bigint("cash_cents", { mode: "bigint" }).notNull(),
     positions: jsonb("positions").notNull(),
     priceSetHash: text("price_set_hash").notNull(),
+    /** final | provisional (a held position was priced with a stale close). */
+    status: text("status").notNull().default("final"),
     version: integer("version").notNull(),
     supersedesId: uuid("supersedes_id"),
     reason: text("reason"),
@@ -403,6 +405,8 @@ export const periodReturns = pgTable(
   {
     id: id(),
     customerId: uuid("customer_id").notNull().references(() => customers.id),
+    /** mtd | ytd | inception — part of the identity, since two periods can share start and end. */
+    period: text("period").notNull().default("inception"),
     periodStart: date("period_start").notNull(),
     periodEnd: date("period_end").notNull(),
     twrBpsE4: bigint("twr_bps_e4", { mode: "bigint" }).notNull(),
@@ -414,12 +418,8 @@ export const periodReturns = pgTable(
     computedAt: createdAt(),
   },
   (table) => [
-    uniqueIndex("period_returns_version_uq").on(
-      table.customerId,
-      table.periodStart,
-      table.periodEnd,
-      table.version,
-    ),
+    uniqueIndex("period_returns_version_uq").on(table.customerId, table.period, table.periodEnd, table.version),
+    index("period_returns_customer_end_idx").on(table.customerId, table.periodEnd),
   ],
 );
 

@@ -6,6 +6,7 @@ import {
   type JournalEntry,
   type LotAvailability,
   type TaxLot,
+  microUnits,
   sealNext,
 } from "@corgi/domain";
 import type {
@@ -22,6 +23,7 @@ import type {
   InboxRepository,
   KycStatus,
   LedgerRepository,
+  LotAdjustment,
   OrderRecord,
   OrderRepository,
   ProviderEvent,
@@ -231,6 +233,7 @@ export class FakeOrderRepository implements OrderRepository {
 
 export class FakeTaxLotRepository implements TaxLotRepository {
   readonly lots: TaxLot[] = [];
+  readonly adjustments: LotAdjustment[] = [];
 
   open(lot: TaxLot): Promise<void> {
     this.lots.push(lot);
@@ -241,8 +244,17 @@ export class FakeTaxLotRepository implements TaxLotRepository {
     return Promise.resolve(
       this.lots
         .filter((lot) => lot.customerId === customerId && lot.symbol === symbol)
-        .map((lot) => ({ lot, remainingUnits: lot.units, remainingBasis: lot.basis })),
+        .map((lot) => {
+          const adjusted = this.adjustments.filter((a) => a.lotId === lot.id).at(-1);
+          const units = adjusted ? microUnits(adjusted.unitsAfter) : lot.units;
+          return { lot: { ...lot, units }, remainingUnits: units, remainingBasis: lot.basis };
+        }),
     );
+  }
+
+  adjust(adjustment: LotAdjustment): Promise<void> {
+    this.adjustments.push(adjustment);
+    return Promise.resolve();
   }
 }
 

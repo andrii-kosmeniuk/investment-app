@@ -6,11 +6,12 @@ import type {
   BrokerPosition,
   CustomerProfile,
   CustomerRecord,
+  DailyClose,
   FundingPort,
   IdentityInquiryRecord,
   IdentityPort,
   KycStatus,
-  LatestClose,
+  LotAdjustment,
   ModelDefinition,
   OpenOrder,
   OrderRecord,
@@ -20,14 +21,22 @@ import type {
 } from "@corgi/application";
 import { hashPassword } from "@corgi/application";
 import {
+  InMemoryPeriodReturnRepository,
+  InMemoryPriceRepository,
+  InMemoryValuationRepository,
+} from "@corgi/application/testing";
+import {
   type AppendableEntry,
   type ApprovalRequest,
   type ClearingAccounts,
   type CustomerLedgerAccounts,
   type JournalEntry,
+  type TaxLot,
+  microUnits,
   sealNext,
 } from "@corgi/domain";
 import { createSessionTokens } from "../src/auth/session.js";
+import type { ApiConfig } from "../src/config.js";
 import type { CustomerServices } from "../src/customer/services.js";
 
 export const OLIVIA_ID = "6f1c9a1e-1b2c-4d3e-8f90-1234567890ab";
@@ -36,17 +45,43 @@ export const MODEL_ID = "8b3e9c3a-3d4e-4f50-ab12-34567890abcd";
 export const BANK_ID = "9c4fad4b-4e5f-4061-bc23-4567890abcde";
 
 export const SESSION_SECRET = "test-session-secret-that-is-at-least-32-chars";
+export const LIVE_FIRE_TOKEN = "test-live-fire-operator-token-0001";
 
-const now = new Date("2026-09-10T15:00:00Z");
+export const testConfig: ApiConfig = {
+  NODE_ENV: "test",
+  HOST: "127.0.0.1",
+  PORT: 0,
+  WEB_ORIGIN: "http://localhost:3000",
+  ENVIRONMENT_NAME: "sandbox",
+  DATABASE_URL: "postgres://unused",
+  SESSION_SECRET,
+  SESSION_TTL_HOURS: 1,
+  ORDER_CONFIRMATION_THRESHOLD_CENTS: 100_000n,
+  MAXIMUM_DEPOSIT_CENTS: 5_000_000n,
+  PLAID_BASE_URL: "https://sandbox.plaid.com",
+  PERSONA_BASE_URL: "https://api.withpersona.com",
+  ALPACA_BROKER_BASE_URL: "https://broker-api.sandbox.alpaca.markets",
+  ALPACA_MARKET_DATA_BASE_URL: "https://data.sandbox.alpaca.markets",
+  MCP_API_KEY: "mcp-test-key-that-is-long-enough-123",
+  LIVE_FIRE_TOKEN,
+};
 
 export interface FakeState {
+  /** Mutable clock so tests can move past a publication cut-off. */
+  now: Date;
   profiles: CustomerProfile[];
   passwordHashes: Record<string, string>;
   inquiries: IdentityInquiryRecord[];
   bankAccounts: BankAccountRecord[];
   transfers: TransferRecord[];
   entries: JournalEntry[];
-  prices: Map<string, LatestClose>;
+  prices: InMemoryPriceRepository;
+  valuations: InMemoryValuationRepository;
+  returns: InMemoryPeriodReturnRepository;
+  lots: TaxLot[];
+  adjustments: LotAdjustment[];
+  /** What the fake market-data feed returns for any window. */
+  marketCloses: DailyClose[];
   models: ModelDefinition[];
   assignments: Map<string, PortfolioAssignment>;
   openOrders: OpenOrder[];
@@ -137,7 +172,11 @@ export function oliviaEntries(): JournalEntry[] {
 }
 
 export async function defaultState(): Promise<FakeState> {
-  return {
+  const clock = { now: () => state.now };
+  const prices = new InMemoryPriceRepository();
+  await prices.record([{ symbol: "VTI", tradeDate: "2026-09-10", price: "297.005", source: "test" }], new Date("2026-09-10T20:15:00Z"));
+  const state: FakeState = {
+    now: new Date("2026-09-10T15:00:00Z"),
     profiles: [
       { id: OLIVIA_ID, email: "olivia@demo.corgi", displayName: "Olivia Martin", kycStatus: "approved", tradingBlocked: false },
       { id: NOAH_ID, email: "noah@demo.corgi", displayName: "Noah Williams", kycStatus: "needs_review", tradingBlocked: true },
@@ -170,7 +209,22 @@ export async function defaultState(): Promise<FakeState> {
       },
     ],
     entries: oliviaEntries(),
-    prices: new Map([["VTI", { symbol: "VTI", price: "297.005", tradeDate: "2026-09-10", status: "final" }]]),
+    prices,
+    valuations: new InMemoryValuationRepository(clock),
+    returns: new InMemoryPeriodReturnRepository(clock),
+    lots: [
+      {
+        id: "lot-1",
+        customerId: OLIVIA_ID,
+        symbol: "VTI",
+        openedEntryId: "33333333-3333-4333-8333-333333333333",
+        openedAt: new Date("2026-09-09T15:30:00Z"),
+        units: microUnits(2_000_000n),
+        basis: 59_400n as TaxLot["basis"],
+      },
+    ],
+    adjustments: [],
+    marketCloses: [],
     models: [
       {
         id: MODEL_ID,
@@ -192,12 +246,16 @@ export async function defaultState(): Promise<FakeState> {
     deposits: [],
     identityCalls: [],
   };
+  return state;
 }
 
 export interface FakeOptions {
   readonly withIdentity?: boolean;
   readonly withFunding?: boolean;
   readonly withBroker?: boolean;
+  readonly withMarketData?: boolean;
+  /** `null` simulates an environment without LIVE_FIRE_TOKEN. */
+  readonly liveFireToken?: string | null;
 }
 
 export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}): CustomerServices {
@@ -240,7 +298,7 @@ export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}
 
   return {
     sessions: createSessionTokens({ secret: SESSION_SECRET, ttlSeconds: 3600 }),
-    clock: { now: () => now },
+    clock: { now: () => state.now },
     ids: { next: () => `00000000-0000-4000-8000-${String(++counter).padStart(12, "0")}` },
     environment: "sandbox",
     limits: { orderConfirmationThresholdCents: 100_000n, maximumDepositCents: 5_000_000n },
@@ -289,8 +347,15 @@ export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}
       findByProviderId: () => Promise.resolve(null),
     },
     ledger: {
-      append: (entry): Promise<AppendResult> => Promise.resolve({ status: "inserted", entry: sealNext(null, entry) }),
-      findByIdempotencyKey: () => Promise.resolve(null),
+      // Real append semantics over the shared entry list: dedupe on key, seal onto the tip.
+      append: (entry): Promise<AppendResult> => {
+        const existing = state.entries.find((candidate) => candidate.idempotencyKey === entry.idempotencyKey);
+        if (existing) return Promise.resolve({ status: "duplicate", entry: existing });
+        const sealed = sealNext(state.entries.at(-1)?.hash ?? null, entry);
+        state.entries.push(sealed);
+        return Promise.resolve({ status: "inserted", entry: sealed });
+      },
+      findByIdempotencyKey: (key) => Promise.resolve(state.entries.find((entry) => entry.idempotencyKey === key) ?? null),
       listForCustomer: (customerId, cutoff) =>
         Promise.resolve(
           state.entries.filter(
@@ -320,8 +385,41 @@ export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}
             ),
           ].sort(),
         ),
+      allPositionSymbols: () =>
+        Promise.resolve(
+          [...new Set(state.entries.flatMap((entry) => entry.postings.filter((p) => p.accountId.includes(":position:")).map((p) => p.commodity)))].sort(),
+        ),
+      customersWithAccounts: () => Promise.resolve(state.profiles.map((profile) => profile.id)),
+      customersHolding: (symbol) =>
+        Promise.resolve(
+          state.profiles
+            .map((profile) => profile.id)
+            .filter((id) => state.entries.some((entry) => entry.postings.some((p) => p.accountId === `customer:${id}:position:${symbol}`))),
+        ),
     },
-    prices: { latestCloses: (symbols) => Promise.resolve(new Map([...state.prices].filter(([symbol]) => symbols.includes(symbol)))) },
+    prices: state.prices,
+    valuations: state.valuations,
+    returns: state.returns,
+    taxLots: {
+      open: (lot) => {
+        state.lots.push(lot);
+        return Promise.resolve();
+      },
+      availableLots: (customerId, symbol) =>
+        Promise.resolve(
+          state.lots
+            .filter((lot) => lot.customerId === customerId && lot.symbol === symbol)
+            .map((lot) => {
+              const adjusted = state.adjustments.filter((a) => a.lotId === lot.id).at(-1);
+              const units = adjusted ? microUnits(adjusted.unitsAfter) : lot.units;
+              return { lot: { ...lot, units }, remainingUnits: units, remainingBasis: lot.basis };
+            }),
+        ),
+      adjust: (adjustment) => {
+        state.adjustments.push(adjustment);
+        return Promise.resolve();
+      },
+    },
     models: {
       list: () => Promise.resolve(state.models),
       findByCode: (code) => Promise.resolve(state.models.find((model) => model.code === code) ?? null),
@@ -345,5 +443,7 @@ export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}
     identity: options.withIdentity === false ? null : identity,
     funding: options.withFunding === false ? null : funding,
     broker: options.withBroker === false ? null : broker,
+    marketData: options.withMarketData === false ? null : { getDailyCloses: () => Promise.resolve(state.marketCloses) },
+    liveFireToken: options.liveFireToken === undefined ? LIVE_FIRE_TOKEN : options.liveFireToken,
   };
 }

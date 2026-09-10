@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EmptyState, ErrorState, InlineAlert, Money, PageHeading, Summary, Units } from "@corgi/ui";
-import { ONBOARDING_STEP_HREF, ONBOARDING_STEP_LABEL, cents, units, valueHeadline } from "../../../lib/copy";
+import { EmptyState, ErrorState, InlineAlert, Money, PageHeading, Percentage, Summary, Units } from "@corgi/ui";
+import { RestatedPill } from "../../../components/PerformanceCard";
+import { ONBOARDING_STEP_HREF, ONBOARDING_STEP_LABEL, cents, percent, units, valueHeadline } from "../../../lib/copy";
 import { load, requireApi } from "../../../server/api";
 
 export const metadata: Metadata = { title: "Overview" };
@@ -31,6 +32,7 @@ export default async function OverviewPage() {
   const headline = valueHeadline(view.value);
   const pendingDeposits = cents(view.cash.pendingDepositCents);
   const hasAnything = view.positions.length > 0 || cents(view.cash.settledCents) > 0n || pendingDeposits > 0n;
+  const inception = view.performance?.returns.find((r) => r.period === "inception") ?? null;
 
   return (
     <>
@@ -74,12 +76,28 @@ export default async function OverviewPage() {
         )}
         {headline.note ? <p className="headline-value__note">{headline.note}</p> : null}
         <p className="headline-value__return">
-          {view.return ? (
+          {inception ? (
             <>
-              {view.return.period} return {`${(view.return.twr * 100).toFixed(2)}%`}
+              Since you started: <Percentage value={inception.twr} /> time-weighted
+              {inception.mwr !== null ? (
+                <>
+                  {" · "}
+                  <Percentage value={inception.mwr} /> money-weighted
+                </>
+              ) : null}
+              {inception.restated ? (
+                <>
+                  {" "}
+                  <RestatedPill restated={inception.restated} previous={percent(inception.restated.previous)} />
+                </>
+              ) : null}
+              {" · "}
+              <Link href="/performance" className="text-link">
+                Performance →
+              </Link>
             </>
           ) : (
-            "Performance appears after your first valuation."
+            "Performance appears after your first nightly valuation."
           )}
         </p>
       </section>

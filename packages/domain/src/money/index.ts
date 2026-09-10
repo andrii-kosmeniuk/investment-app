@@ -40,6 +40,27 @@ export function parseDecimal(value: string, scale: number): bigint {
   return negative ? -result : result;
 }
 
+/** Inverse of `parseDecimal`: renders a scaled integer as an exact decimal string. */
+export function formatDecimal(value: bigint, scale: number): string {
+  const negative = value < 0n;
+  const digits = (negative ? -value : value).toString().padStart(scale + 1, "0");
+  const whole = digits.slice(0, digits.length - scale);
+  const fraction = scale === 0 ? "" : `.${digits.slice(digits.length - scale)}`;
+  return `${negative ? "-" : ""}${whole}${fraction}`;
+}
+
+/** Integer division with bankers' (half-even) rounding, sign-symmetric. */
+export function divideHalfEven(numerator: bigint, denominator: bigint): bigint {
+  if (denominator === 0n) throw new RangeError("Division by zero");
+  if (denominator < 0n) return divideHalfEven(-numerator, -denominator);
+  const quotient = numerator / denominator;
+  const remainder = numerator % denominator;
+  const twice = (remainder < 0n ? -remainder : remainder) * 2n;
+  if (twice < denominator) return quotient;
+  if (twice > denominator || quotient % 2n !== 0n) return quotient + (numerator < 0n ? -1n : 1n);
+  return quotient;
+}
+
 export const parseUsd = (value: string): Cents => cents(parseDecimal(value, MONEY_SCALE));
 export const parseUnits = (value: string): MicroUnits =>
   microUnits(parseDecimal(value, UNIT_SCALE));

@@ -13,34 +13,18 @@ import {
   verificationSessionResponse,
 } from "@corgi/contracts";
 import { buildApi } from "../src/app.js";
-import type { ApiConfig } from "../src/config.js";
 import type { ApiServices } from "../src/services.js";
 import {
   type FakeOptions,
   type FakeState,
   NOAH_ID,
   OLIVIA_ID,
-  SESSION_SECRET,
   defaultState,
   fakeCustomerServices,
+  testConfig,
 } from "./customer-fakes.js";
 
-const config: ApiConfig = {
-  NODE_ENV: "test",
-  HOST: "127.0.0.1",
-  PORT: 0,
-  WEB_ORIGIN: "http://localhost:3000",
-  ENVIRONMENT_NAME: "sandbox",
-  DATABASE_URL: "postgres://unused",
-  SESSION_SECRET,
-  SESSION_TTL_HOURS: 1,
-  ORDER_CONFIRMATION_THRESHOLD_CENTS: 100_000n,
-  MAXIMUM_DEPOSIT_CENTS: 5_000_000n,
-  PLAID_BASE_URL: "https://sandbox.plaid.com",
-  PERSONA_BASE_URL: "https://api.withpersona.com",
-  ALPACA_BROKER_BASE_URL: "https://broker-api.sandbox.alpaca.markets",
-  MCP_API_KEY: "mcp-test-key-that-is-long-enough-123",
-};
+const config = testConfig;
 
 let app: FastifyInstance;
 let state: FakeState;
@@ -143,7 +127,7 @@ describe("portfolio", () => {
     ]);
     expect(body.value).toEqual({ cents: String(40_600 + 59_401), status: "final" });
     expect(body.model).toEqual({ code: "balanced-growth-v1", name: "Balanced growth" });
-    expect(body.return).toBeNull();
+    expect(body.performance).toBeNull();
   });
 
   it("is an honest empty view for a customer with no ledger history", async () => {
@@ -155,7 +139,7 @@ describe("portfolio", () => {
   });
 
   it("does not report a value when a held position has no price", async () => {
-    state.prices.clear();
+    state.prices.rows.length = 0;
     const response = await app.inject({ method: "GET", url: "/v1/customer/portfolio", headers: authed(await tokenFor("olivia@demo.corgi")) });
     const body = portfolioResponse.parse(response.json());
     expect(body.value).toEqual({ cents: null, status: "unavailable" });

@@ -1,9 +1,15 @@
 import {
   type CustomerProfile,
   NotFoundError,
+  type PerformanceView,
+  type PeriodReturnRecord,
+  RETURN_PERIODS,
+  type ReturnPeriod,
+  type ValuationRecord,
   buildActivityRows,
   buildDepositProgress,
   buildOnboardingView,
+  buildPerformanceView,
   buildPortfolioView,
   deriveCustomerBalances,
 } from "@corgi/application";
@@ -13,24 +19,122 @@ import type {
   CustomerSummary,
   ModelResponse,
   OnboardingResponse,
+  PerformanceResponse,
   PortfolioResponse,
+  RestatementAuditRow,
+  StatementResponse,
   TransfersResponse,
 } from "@corgi/contracts";
+import { bpsE4ToReturn, businessDate, endOfBusinessDay } from "@corgi/domain";
 import type { CustomerServices } from "./services.js";
 
 const str = (value: bigint): string => value.toString();
 const iso = (value: Date): string => value.toISOString();
 
-/** The business date in the market's timezone, so a late-night read still says "today". */
-export function businessDate(now: Date, timeZone = "America/New_York"): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const get = (type: string): string => parts.find((part) => part.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")}`;
+/* ------------------------------------------------------------------ */
+/* Performance (ADR-0004)                                               */
+/* ------------------------------------------------------------------ */
+
+function toPerformanceResponse(view: PerformanceView): PerformanceResponse {
+  return {
+    asOfDate: view.asOfDate,
+    valueCents: str(view.valueCents),
+    status: view.status,
+    version: view.version,
+    computedAt: iso(view.computedAt),
+    restated: view.restated ? { at: iso(view.restated.at), previous: str(view.restated.previous), reason: view.restated.reason } : null,
+    returns: view.returns.map((r) => ({
+      period: r.period,
+      periodStart: r.periodStart,
+      periodEnd: r.periodEnd,
+      twr: r.twr,
+      mwr: r.mwr,
+      flowsCents: str(r.flowsCents),
+      version: r.version,
+      restated: r.restated ? { at: iso(r.restated.at), previous: r.restated.previous, reason: r.restated.reason } : null,
+    })),
+  };
+}
+
+/**
+ * Headline performance as known at `publishedAt`. Only versions computed at or
+ * before that instant are visible, so the same code serves "current" and the
+ * statement's "as published on …" toggle.
+ */
+export async function loadPerformance(
+  services: CustomerServices,
+  customerId: string,
+  publishedAt: Date,
+): Promise<PerformanceView | null> {
+  const series = await services.valuations.series(customerId, { publishedAt });
+  const latest = series.at(-1);
+  if (!latest) return null;
+  const visible = <T extends { computedAt: Date }>(rows: readonly T[]) => rows.filter((row) => row.computedAt <= publishedAt);
+
+  const valuationVersions = visible(await services.valuations.versions(customerId, latest.asOfDate));
+  const returnVersions = new Map<ReturnPeriod, readonly PeriodReturnRecord[]>();
+  for (const period of RETURN_PERIODS) {
+    returnVersions.set(period, visible(await services.returns.versions(customerId, period, latest.asOfDate)));
+  }
+  return buildPerformanceView({ valuation: latest, valuationVersions, returnVersions });
+}
+
+/** Restatement audit rows for one customer or (when `customerId` is undefined) everyone. */
+export async function loadRestatements(services: CustomerServices, customerId?: string, limit = 100): Promise<RestatementAuditRow[]> {
+  const [valuationRows, returnRows] = await Promise.all([services.valuations.listRestated(limit), services.returns.listRestated(limit)]);
+  const rows: RestatementAuditRow[] = [];
+
+  for (const row of valuationRows) {
+    if (customerId && row.customerId !== customerId) continue;
+    const previous = row.supersedesId
+      ? (await services.valuations.versions(row.customerId, row.asOfDate)).find((v) => v.id === row.supersedesId)
+      : undefined;
+    rows.push(auditRow("valuation", row, null, previous ? str(previous.valueCents) : "", str(row.valueCents)));
+  }
+  for (const row of returnRows) {
+    if (customerId && row.customerId !== customerId) continue;
+    const previous = row.supersedesId
+      ? (await services.returns.versions(row.customerId, row.period, row.periodEnd)).find((v) => v.id === row.supersedesId)
+      : undefined;
+    rows.push(
+      auditRow("return", { ...row, asOfDate: row.periodEnd }, row.period, previous ? String(bpsE4ToReturn(previous.twrBpsE4)) : "", String(bpsE4ToReturn(row.twrBpsE4))),
+    );
+  }
+  return rows.sort((a, b) => b.computedAt.localeCompare(a.computedAt)).slice(0, limit);
+}
+
+function auditRow(
+  kind: "valuation" | "return",
+  row: Pick<ValuationRecord, "customerId" | "asOfDate" | "version" | "computedAt" | "reason">,
+  period: ReturnPeriod | null,
+  from: string,
+  to: string,
+): RestatementAuditRow {
+  return { kind, customerId: row.customerId, asOfDate: row.asOfDate, period, version: row.version, computedAt: iso(row.computedAt), reason: row.reason, from, to };
+}
+
+export async function loadStatement(services: CustomerServices, customerId: string, asPublishedOn: string | null): Promise<StatementResponse> {
+  const publishedAt = asPublishedOn ? endOfBusinessDay(asPublishedOn) : services.clock.now();
+  const [performance, series, restatements] = await Promise.all([
+    loadPerformance(services, customerId, publishedAt),
+    services.valuations.series(customerId, { publishedAt }),
+    loadRestatements(services, customerId),
+  ]);
+  return {
+    asPublishedOn,
+    publishedAt: iso(publishedAt),
+    performance: performance ? toPerformanceResponse(performance) : null,
+    series: series.map((v) => ({
+      asOfDate: v.asOfDate,
+      valueCents: str(v.valueCents),
+      cashCents: str(v.cashCents),
+      status: v.status,
+      version: v.version,
+      computedAt: iso(v.computedAt),
+      reason: v.reason,
+    })),
+    restatements: restatements.filter((row) => row.computedAt <= iso(publishedAt)).map(({ customerId: _omit, ...row }) => row),
+  };
 }
 
 export function toCustomerSummary(profile: CustomerProfile): CustomerSummary {
@@ -97,9 +201,12 @@ export async function loadPortfolio(services: CustomerServices, customerId: stri
 
   const accounts = await services.resolver.forCustomer(customerId, symbols);
   const balances = await deriveCustomerBalances({ ledger: services.ledger }, customerId, accounts, symbols, cutoff);
-  const prices = await services.prices.latestCloses([...balances.positionsMicro.keys()], asOf);
+  const [prices, performance] = await Promise.all([
+    services.prices.latestCloses([...balances.positionsMicro.keys()], asOf),
+    loadPerformance(services, customerId, now),
+  ]);
 
-  const view = buildPortfolioView({ customerId, asOf, publishedAt: now, balances, prices, model, openOrders });
+  const view = buildPortfolioView({ customerId, asOf, publishedAt: now, balances, prices, model, openOrders, performance });
   return {
     customerId: view.customerId,
     asOf: view.asOf,
@@ -113,7 +220,7 @@ export async function loadPortfolio(services: CustomerServices, customerId: stri
       availableToInvestCents: str(view.cash.availableToInvestCents),
       availableToWithdrawCents: str(view.cash.availableToWithdrawCents),
     },
-    return: view.return,
+    performance: view.performance ? toPerformanceResponse(view.performance) : null,
     model: view.model,
     positions: view.positions.map((position) => ({
       symbol: position.symbol,

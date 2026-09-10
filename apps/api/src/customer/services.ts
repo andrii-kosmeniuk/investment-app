@@ -13,13 +13,17 @@ import type {
   IdentityPort,
   LedgerAccountDirectory,
   LedgerRepository,
+  MarketDataPort,
   ModelCatalog,
   ModelDefinition,
   OrderListing,
   OrderRepository,
+  PeriodReturnRepository,
   PortfolioAssignmentRepository,
   PriceRepository,
+  TaxLotRepository,
   TransferRepository,
+  ValuationRepository,
 } from "@corgi/application";
 import type { SessionTokens } from "../auth/session.js";
 
@@ -48,6 +52,9 @@ export interface CustomerServices {
   readonly resolver: AccountResolver;
   readonly accounts: LedgerAccountDirectory;
   readonly prices: PriceRepository;
+  readonly valuations: ValuationRepository;
+  readonly returns: PeriodReturnRepository;
+  readonly taxLots: TaxLotRepository;
   readonly models: ModelCatalog & { findById(id: string): Promise<ModelDefinition | null> };
   readonly portfolios: PortfolioAssignmentRepository;
   readonly orders: OrderRepository;
@@ -56,4 +63,7 @@ export interface CustomerServices {
   readonly identity: IdentityPort | null;
   readonly funding: FundingPort | null;
   readonly broker: BrokerPort | null;
+  readonly marketData: MarketDataPort | null;
+  /** Operator credential for `/v1/ops/*`; null disables those routes (503). */
+  readonly liveFireToken: string | null;
 }

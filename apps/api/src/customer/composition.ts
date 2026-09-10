@@ -12,13 +12,21 @@ import {
   DrizzleModelCatalog,
   DrizzleOrderListing,
   DrizzleOrderRepository,
+  DrizzlePeriodReturnRepository,
   DrizzlePortfolioAssignmentRepository,
   DrizzlePriceRepository,
+  DrizzleTaxLotRepository,
   DrizzleTransferRepository,
+  DrizzleValuationRepository,
   type TransactionalDatabase,
   approvalRequests,
 } from "@corgi/database";
-import { AlpacaBrokerAdapter, PersonaIdentityAdapter, PlaidFundingAdapter } from "@corgi/integrations";
+import {
+  AlpacaBrokerAdapter,
+  AlpacaMarketDataAdapter,
+  PersonaIdentityAdapter,
+  PlaidFundingAdapter,
+} from "@corgi/integrations";
 import { eq } from "drizzle-orm";
 import { createSessionTokens } from "../auth/session.js";
 import type { ApiConfig } from "../config.js";
@@ -77,6 +85,9 @@ export function createCustomerServices(db: TransactionalDatabase, config: ApiCon
     resolver: new DrizzleAccountResolver(db),
     accounts: new DrizzleLedgerAccountDirectory(db),
     prices: new DrizzlePriceRepository(db),
+    valuations: new DrizzleValuationRepository(db),
+    returns: new DrizzlePeriodReturnRepository(db),
+    taxLots: new DrizzleTaxLotRepository(db),
     models: new DrizzleModelCatalog(db),
     portfolios: new DrizzlePortfolioAssignmentRepository(db),
     orders: new DrizzleOrderRepository(db),
@@ -106,5 +117,14 @@ export function createCustomerServices(db: TransactionalDatabase, config: ApiCon
             secret: config.ALPACA_SECRET,
           })
         : null,
+    marketData:
+      config.ALPACA_KEY && config.ALPACA_SECRET
+        ? new AlpacaMarketDataAdapter({
+            baseUrl: config.ALPACA_MARKET_DATA_BASE_URL,
+            key: config.ALPACA_KEY,
+            secret: config.ALPACA_SECRET,
+          })
+        : null,
+    liveFireToken: config.LIVE_FIRE_TOKEN ?? null,
   };
 }

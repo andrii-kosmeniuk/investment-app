@@ -249,16 +249,135 @@ export interface LatestClose {
   readonly price: string;
   readonly tradeDate: string;
   readonly status: "final" | "stale";
+  /** Version of the close for that date; a corrected close is version 2+. */
+  readonly version: number;
+}
+
+export interface StoredClose {
+  readonly id: string;
+  readonly symbol: string;
+  readonly tradeDate: string;
+  readonly price: string;
+  readonly source: string;
+  readonly version: number;
+  readonly supersedesId: string | null;
+  readonly receivedAt: Date;
+}
+
+export interface RecordedClose extends StoredClose {
+  /** True when an earlier version existed for the same date with a different close. */
+  readonly corrected: boolean;
 }
 
 export interface PriceRepository {
+  /**
+   * Latest usable close per symbol on or before `asOf` (highest version for
+   * that date). Marks a close older than the staleness window as `stale`.
+   */
   latestCloses(symbols: readonly string[], asOf: string): Promise<ReadonlyMap<string, LatestClose>>;
+  /**
+   * Persists closes. A close equal to the current version for its
+   * (symbol, tradeDate) is a no-op; a different one becomes the next version
+   * and points at the row it supersedes. Returns only the rows written.
+   */
+  record(closes: readonly DailyClose[], receivedAt: Date): Promise<readonly RecordedClose[]>;
+  /** Current version of every stored close for `symbol` with tradeDate >= fromDate, ascending. */
+  listForSymbol(symbol: string, fromDate: string): Promise<readonly StoredClose[]>;
 }
 
 export interface LedgerAccountDirectory {
   pathsById(accountIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
   /** Symbols for which the customer has ever had a position account. */
   positionSymbols(customerId: string): Promise<readonly string[]>;
+  /** Every symbol any customer has ever held — the universe the price feed must cover. */
+  allPositionSymbols(): Promise<readonly string[]>;
+  /** Customers with at least one ledger account — the population the valuation job values. */
+  customersWithAccounts(): Promise<readonly string[]>;
+  /** Customers with a position account for `symbol` (past or present). */
+  customersHolding(symbol: string): Promise<readonly string[]>;
+}
+
+/* ------------------------------------------------------------------ */
+/* Valuations and period returns — versioned, never updated             */
+/* ------------------------------------------------------------------ */
+
+export type ValuationStatus = "final" | "provisional";
+
+export interface ValuationPositionSnapshot {
+  readonly symbol: string;
+  readonly unitsMicro: bigint;
+  readonly price: string;
+  readonly priceDate: string;
+  readonly priceVersion: number;
+  readonly priceStatus: "final" | "stale";
+  readonly valueCents: bigint;
+}
+
+export interface ValuationRecord {
+  readonly id: string;
+  readonly customerId: string;
+  readonly asOfDate: string;
+  readonly valueCents: bigint;
+  /** Net cash counted in the value: available-to-trade plus dividend receivable. */
+  readonly cashCents: bigint;
+  readonly positions: readonly ValuationPositionSnapshot[];
+  readonly priceSetHash: string;
+  readonly status: ValuationStatus;
+  readonly version: number;
+  readonly supersedesId: string | null;
+  readonly reason: string | null;
+  readonly computedAt: Date;
+}
+
+export interface ValuationRange {
+  readonly from?: string;
+  readonly to?: string;
+  /** Knowledge cut-off: only versions computed at or before this instant ("as published"). */
+  readonly publishedAt?: Date;
+}
+
+export interface ValuationRepository {
+  /** Highest visible version per date, ascending by date. */
+  series(customerId: string, range: ValuationRange): Promise<readonly ValuationRecord[]>;
+  /** Every version for one date, ascending by version. */
+  versions(customerId: string, asOfDate: string): Promise<readonly ValuationRecord[]>;
+  insert(record: Omit<ValuationRecord, "computedAt">): Promise<ValuationRecord>;
+  /** Superseding versions across all customers, newest first — the restatement audit. */
+  listRestated(limit: number): Promise<readonly ValuationRecord[]>;
+}
+
+export type ReturnPeriod = "mtd" | "ytd" | "inception";
+
+export interface PeriodReturnRecord {
+  readonly id: string;
+  readonly customerId: string;
+  readonly period: ReturnPeriod;
+  readonly periodStart: string;
+  readonly periodEnd: string;
+  /** Time-weighted return as basis points × 10⁴ (fraction × 10⁸). */
+  readonly twrBpsE4: bigint;
+  /** Modified Dietz on the same scale; null when nothing was invested. */
+  readonly mwrBpsE4: bigint | null;
+  readonly flowsCents: bigint;
+  readonly version: number;
+  readonly supersedesId: string | null;
+  readonly reason: string | null;
+  readonly computedAt: Date;
+}
+
+export interface PeriodReturnRepository {
+  /** Highest version for (period, periodEnd), optionally as known at `publishedAt`. */
+  latest(
+    customerId: string,
+    period: ReturnPeriod,
+    periodEnd: string,
+    publishedAt?: Date,
+  ): Promise<PeriodReturnRecord | null>;
+  /** Every version for (period, periodEnd), ascending by version. */
+  versions(customerId: string, period: ReturnPeriod, periodEnd: string): Promise<readonly PeriodReturnRecord[]>;
+  insert(record: Omit<PeriodReturnRecord, "computedAt">): Promise<PeriodReturnRecord>;
+  /** Superseding versions across all customers, newest first — the restatement audit. */
+  listRestated(limit: number): Promise<readonly PeriodReturnRecord[]>;
 }
 
 export interface OrderListing {
@@ -307,9 +426,25 @@ export interface OrderRepository {
   }): Promise<void>;
 }
 
+export interface LotAdjustment {
+  readonly id: string;
+  readonly lotId: string;
+  /** The ledger entry that moved the units (e.g. the split entry). */
+  readonly entryId: string;
+  readonly kind: "split";
+  readonly ratioNumerator: bigint;
+  readonly ratioDenominator: bigint;
+  readonly unitsAfter: bigint;
+  /** Decimal string; total basis is unchanged, so this is basis ÷ unitsAfter. */
+  readonly basisPerUnitAfter: string;
+  readonly effectiveAt: Date;
+}
+
 export interface TaxLotRepository {
   open(lot: TaxLot): Promise<void>;
+  /** Open lots net of consumptions, with any corporate-action adjustments applied. */
   availableLots(customerId: string, symbol: string): Promise<readonly LotAvailability[]>;
+  adjust(adjustment: LotAdjustment): Promise<void>;
 }
 
 /**

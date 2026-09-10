@@ -5,14 +5,15 @@ import {
   inboundEvents,
   journalEntries,
   ledgerAccounts,
-  periodReturns,
   postings,
   reconBreaks,
   taxLots,
   valuations,
 } from "@corgi/database";
+import { endOfBusinessDay } from "@corgi/domain";
 import { and, desc, eq, gte, lte } from "drizzle-orm";
 import type { AgentReadService, AgentWriteService } from "@corgi/mcp";
+import { loadPerformance } from "./customer/read-models.js";
 import type { CustomerServices } from "./customer/services.js";
 
 export interface ApiServices {
@@ -68,14 +69,21 @@ export function createServices(database: Database, customer: CustomerServices): 
           .orderBy(desc(valuations.asOfDate), desc(valuations.version))
           .limit(1);
       },
+      // Same knowledge-time semantics as the customer's statement: an agent asking
+      // "as published on D" gets exactly what the customer saw that day (ADR-0004).
       async getPerformance(customerId, period, asPublishedOn) {
-        const rows = await database
-          .select()
-          .from(periodReturns)
-          .where(eq(periodReturns.customerId, customerId))
-          .orderBy(desc(periodReturns.periodEnd), desc(periodReturns.version))
-          .limit(20);
-        return { period, asPublishedOn: asPublishedOn ?? null, rows };
+        const publishedAt = asPublishedOn ? endOfBusinessDay(asPublishedOn) : customer.clock.now();
+        const performance = await loadPerformance(customer, customerId, publishedAt);
+        // Stored periods are mtd / ytd / inception; the tool's 1W has no stored series (CUT_LIST).
+        const stored = ({ "1M": "mtd", YTD: "ytd", ALL: "inception" } as Record<string, string | undefined>)[period] ?? null;
+        return {
+          period,
+          storedPeriod: stored,
+          asPublishedOn: asPublishedOn ?? null,
+          performance: performance
+            ? { ...performance, returns: performance.returns.filter((r) => stored === null || r.period === stored) }
+            : null,
+        };
       },
       async listTransactions(customerId, from, to) {
         const predicates = [eq(ledgerAccounts.customerId, customerId)];

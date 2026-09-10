@@ -7,6 +7,9 @@ const schema = z.object({
   ALPACA_BROKER_BASE_URL: z.string().url().default("https://broker-api.sandbox.alpaca.markets"),
   ALPACA_KEY: z.string().min(1),
   ALPACA_SECRET: z.string().min(1),
+  ALPACA_MARKET_DATA_BASE_URL: z.string().url().default("https://data.sandbox.alpaca.markets"),
+  /** Calendar days the nightly price/valuation jobs re-check (late feeds, missed runs). */
+  VALUATION_LOOKBACK_DAYS: z.coerce.number().int().min(1).max(60).default(7),
   // Plaid transfer-event sync is optional: when unset the worker still runs the
   // Alpaca stream and the inbox processor, it just won't poll for ACH events.
   PLAID_BASE_URL: z.string().url().default("https://sandbox.plaid.com"),

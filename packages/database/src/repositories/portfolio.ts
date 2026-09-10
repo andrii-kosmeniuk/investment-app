@@ -1,4 +1,5 @@
 import type {
+  DailyClose,
   LatestClose,
   LedgerAccountDirectory,
   ModelCatalog,
@@ -8,9 +9,11 @@ import type {
   PortfolioAssignment,
   PortfolioAssignmentRepository,
   PriceRepository,
+  RecordedClose,
+  StoredClose,
 } from "@corgi/application";
-import type { OrderState } from "@corgi/domain";
-import { and, desc, eq, inArray, lte, notInArray } from "drizzle-orm";
+import { type OrderState, parseDecimal } from "@corgi/domain";
+import { and, desc, eq, gte, inArray, isNotNull, lte, notInArray } from "drizzle-orm";
 import type { TransactionalDatabase } from "../pool.js";
 import {
   customerPortfolios,
@@ -112,6 +115,23 @@ function daysBetween(fromIsoDate: string, toIsoDate: string): number {
   return Math.round((to - from) / 86_400_000);
 }
 
+const PRICE_SCALE = 8;
+
+type PriceRow = typeof prices.$inferSelect;
+
+function toStoredClose(row: PriceRow): StoredClose {
+  return {
+    id: row.id,
+    symbol: row.symbol,
+    tradeDate: row.tradeDate,
+    price: row.close,
+    source: row.source,
+    version: row.version,
+    supersedesId: row.supersedesId,
+    receivedAt: row.receivedAt,
+  };
+}
+
 export class DrizzlePriceRepository implements PriceRepository {
   constructor(private readonly db: TransactionalDatabase) {}
 
@@ -135,10 +155,66 @@ export class DrizzlePriceRepository implements PriceRepository {
         symbol: row.symbol,
         price: row.close,
         tradeDate: row.tradeDate,
+        version: row.version,
         status: daysBetween(row.tradeDate, asOf) > STALE_AFTER_DAYS ? "stale" : "final",
       });
     }
     return latest;
+  }
+
+  /**
+   * Appends closes as versions. Equality is decided on the exact 8-place value,
+   * so a feed re-sending "255" for a stored "255.00000000" is a no-op while a
+   * genuine correction becomes version n+1 pointing at the row it supersedes.
+   * The unique (symbol, date, version) index makes a concurrent double-write
+   * lose quietly instead of forking the chain.
+   */
+  async record(closes: readonly DailyClose[], receivedAt: Date): Promise<readonly RecordedClose[]> {
+    const written: RecordedClose[] = [];
+    for (const close of closes) {
+      const current = await this.current(close.symbol, close.tradeDate);
+      if (current && parseDecimal(current.price, PRICE_SCALE) === parseDecimal(close.price, PRICE_SCALE)) continue;
+      const [row] = await this.db
+        .insert(prices)
+        .values({
+          symbol: close.symbol,
+          tradeDate: close.tradeDate,
+          close: close.price,
+          source: close.source,
+          version: (current?.version ?? 0) + 1,
+          supersedesId: current?.id ?? null,
+          receivedAt,
+          status: "final",
+        })
+        .onConflictDoNothing({ target: [prices.symbol, prices.tradeDate, prices.version] })
+        .returning();
+      if (row) written.push({ ...toStoredClose(row), corrected: current !== null });
+    }
+    return written;
+  }
+
+  async listForSymbol(symbol: string, fromDate: string): Promise<readonly StoredClose[]> {
+    const rows = await this.db
+      .select()
+      .from(prices)
+      .where(and(eq(prices.symbol, symbol), gte(prices.tradeDate, fromDate)))
+      .orderBy(prices.tradeDate, desc(prices.version));
+    const latestPerDate: StoredClose[] = [];
+    for (const row of rows) {
+      if (latestPerDate.at(-1)?.tradeDate === row.tradeDate) continue;
+      latestPerDate.push(toStoredClose(row));
+    }
+    return latestPerDate;
+  }
+
+  private async current(symbol: string, tradeDate: string): Promise<StoredClose | null> {
+    const [row] = await this.db
+      .select()
+      .from(prices)
+      .where(and(eq(prices.symbol, symbol), eq(prices.tradeDate, tradeDate)))
+      .orderBy(desc(prices.version))
+      .limit(1);
+    return row ? toStoredClose(row) : null;
   }
 }
 
@@ -160,6 +236,36 @@ export class DrizzleLedgerAccountDirectory implements LedgerAccountDirectory {
       .from(ledgerAccounts)
       .where(and(eq(ledgerAccounts.customerId, customerId), eq(ledgerAccounts.kind, "position")));
     return rows.flatMap((row) => (row.symbol ? [row.symbol] : [])).sort();
+  }
+
+  async allPositionSymbols(): Promise<readonly string[]> {
+    const rows = await this.db
+      .selectDistinct({ symbol: ledgerAccounts.commodityConstraint })
+      .from(ledgerAccounts)
+      .where(and(eq(ledgerAccounts.kind, "position"), isNotNull(ledgerAccounts.customerId)));
+    return rows.flatMap((row) => (row.symbol ? [row.symbol] : [])).sort();
+  }
+
+  async customersWithAccounts(): Promise<readonly string[]> {
+    const rows = await this.db
+      .selectDistinct({ customerId: ledgerAccounts.customerId })
+      .from(ledgerAccounts)
+      .where(isNotNull(ledgerAccounts.customerId));
+    return rows.flatMap((row) => (row.customerId ? [row.customerId] : [])).sort();
+  }
+
+  async customersHolding(symbol: string): Promise<readonly string[]> {
+    const rows = await this.db
+      .selectDistinct({ customerId: ledgerAccounts.customerId })
+      .from(ledgerAccounts)
+      .where(
+        and(
+          eq(ledgerAccounts.kind, "position"),
+          eq(ledgerAccounts.commodityConstraint, symbol),
+          isNotNull(ledgerAccounts.customerId),
+        ),
+      );
+    return rows.flatMap((row) => (row.customerId ? [row.customerId] : [])).sort();
   }
 }
 

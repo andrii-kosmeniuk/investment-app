@@ -18,6 +18,8 @@ export interface CustomerBalances {
   readonly availableToTradeCents: bigint;
   /** Settled − unsettled buys. Unsettled sell proceeds are NOT withdrawable. */
   readonly withdrawableCents: bigint;
+  /** Dividends accrued on ex-date but not yet paid; counted in value, not spendable. */
+  readonly dividendReceivableCents: bigint;
   /** Position units per symbol (micro-units), read from position accounts only. */
   readonly positionsMicro: ReadonlyMap<string, bigint>;
 }
@@ -63,6 +65,7 @@ export async function deriveCustomerBalances(
     unsettledSellsCents: signedSells,
     availableToTradeCents: settledCents + signedBuys + signedSells,
     withdrawableCents: settledCents + signedBuys,
+    dividendReceivableCents: usd(accounts.dividendReceivable),
     positionsMicro,
   };
 }

@@ -1,19 +1,8 @@
 import type { Cents, MicroUnits } from "../money/index.js";
-import { cents } from "../money/index.js";
+import { cents, divideHalfEven } from "../money/index.js";
 
+/** micro-units (1e6) × price scaled to 1e8 → cents (1e2): divide by 1e12. */
 const VALUE_DENOMINATOR = 1_000_000_000_000n;
-
-function divideHalfEven(numerator: bigint, denominator: bigint): bigint {
-  const quotient = numerator / denominator;
-  const remainder = numerator % denominator;
-  const absoluteRemainder = remainder < 0n ? -remainder : remainder;
-  const twice = absoluteRemainder * 2n;
-  if (twice < denominator) return quotient;
-  if (twice > denominator || quotient % 2n !== 0n) {
-    return quotient + (numerator < 0n ? -1n : 1n);
-  }
-  return quotient;
-}
 
 /** Values micro-units against a USD price scaled to eight decimals. */
 export function valuePosition(units: MicroUnits, priceE8: bigint): Cents {

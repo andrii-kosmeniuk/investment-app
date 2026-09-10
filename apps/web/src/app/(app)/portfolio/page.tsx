@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AllocationBar, CashBreakdown, EmptyState, ErrorState, InlineAlert, Money, PageHeading, StatusPill, Units } from "@corgi/ui";
 import { ModelPicker } from "../../../components/ModelPicker";
+import { PerformanceCard } from "../../../components/PerformanceCard";
 import { cents, priceStatusLabel, units, valueHeadline } from "../../../lib/copy";
 import { load, requireApi } from "../../../server/api";
 
@@ -66,9 +67,10 @@ export default async function PortfolioPage() {
           ) : (
             <p className="muted">No model chosen yet. Pick one below to invest your settled cash.</p>
           )}
-          {view.return ? null : <p className="muted small">Performance appears after your first valuation.</p>}
         </div>
       </section>
+
+      <PerformanceCard performance={view.performance} />
 
       <section className="section">
         <div className="section__heading">

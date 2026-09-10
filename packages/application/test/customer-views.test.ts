@@ -20,6 +20,7 @@ function balances(overrides: Partial<CustomerBalances> = {}): CustomerBalances {
     unsettledSellsCents: 0n,
     availableToTradeCents: 1_000n,
     withdrawableCents: 1_000n,
+    dividendReceivableCents: 0n,
     positionsMicro: new Map(),
     ...overrides,
   };
@@ -49,9 +50,10 @@ describe("portfolio view", () => {
         unsettledBuysCents: 59_400n,
         availableToTradeCents: 40_600n,
         withdrawableCents: 40_600n,
+        dividendReceivableCents: 0n,
         positionsMicro: new Map([["VTI", 2_000_000n]]), // 2.000000 units
       }),
-      prices: new Map([["VTI", { symbol: "VTI", price: "297.005", tradeDate: "2026-09-10", status: "final" }]]),
+      prices: new Map([["VTI", { symbol: "VTI", price: "297.005", tradeDate: "2026-09-10", status: "final", version: 1 }]]),
       model: balancedGrowth,
       openOrders: [],
     });
@@ -59,7 +61,7 @@ describe("portfolio view", () => {
       {
         symbol: "VTI",
         unitsMicro: 2_000_000n,
-        price: { symbol: "VTI", price: "297.005", tradeDate: "2026-09-10", status: "final" },
+        price: { symbol: "VTI", price: "297.005", tradeDate: "2026-09-10", status: "final", version: 1 },
         valueCents: 59_401n, // 594.01 (half-even on .010 → 59401)
         targetWeightBps: 6000,
         actualWeightBps: 5940,
@@ -76,7 +78,7 @@ describe("portfolio view", () => {
       asOf: "2026-09-10",
       publishedAt,
       balances: balances({ positionsMicro: new Map([["VTI", 1_000_000n], ["BND", 1_000_000n]]) }),
-      prices: new Map([["VTI", { symbol: "VTI", price: "300", tradeDate: "2026-09-10", status: "final" }]]),
+      prices: new Map([["VTI", { symbol: "VTI", price: "300", tradeDate: "2026-09-10", status: "final", version: 1 }]]),
       model: null,
       openOrders: [],
     });
@@ -96,7 +98,7 @@ describe("portfolio view", () => {
       asOf: "2026-09-10",
       publishedAt,
       balances: balances({ pendingDepositCents: 100_000n, positionsMicro: new Map([["BND", 1_000_000n]]) }),
-      prices: new Map([["BND", { symbol: "BND", price: "72.5", tradeDate: "2026-09-08", status: "stale" }]]),
+      prices: new Map([["BND", { symbol: "BND", price: "72.5", tradeDate: "2026-09-08", status: "stale", version: 1 }]]),
       model: null,
       openOrders: [],
     });
@@ -116,7 +118,7 @@ describe("portfolio view", () => {
     });
     expect(view.value).toEqual({ cents: 1_000n, status: "final" });
     expect(view.positions).toEqual([]);
-    expect(view.return).toBeNull();
+    expect(view.performance).toBeNull();
   });
 });
 

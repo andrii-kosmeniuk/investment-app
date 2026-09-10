@@ -1,6 +1,7 @@
 import { microUnits, parseDecimal, valuePosition } from "@corgi/domain";
 import type { CustomerBalances } from "../ledger/balances.js";
 import type { LatestClose, ModelDefinition, OpenOrder } from "../ports.js";
+import type { PerformanceView } from "./performance-view.js";
 
 export interface PortfolioPositionView {
   readonly symbol: string;
@@ -27,11 +28,8 @@ export interface PortfolioView {
     readonly availableToInvestCents: bigint;
     readonly availableToWithdrawCents: bigint;
   };
-  readonly return: {
-    readonly period: string;
-    readonly twr: number;
-    readonly priorPublishedTwr: number | null;
-  } | null;
+  /** Latest stored valuation and period returns; null before the first nightly run. */
+  readonly performance: PerformanceView | null;
   readonly model: { readonly code: string; readonly name: string } | null;
   readonly positions: readonly PortfolioPositionView[];
   readonly openOrders: readonly OpenOrder[];
@@ -45,7 +43,7 @@ export interface PortfolioViewInput {
   readonly prices: ReadonlyMap<string, LatestClose>;
   readonly model: Pick<ModelDefinition, "code" | "name" | "allocations"> | null;
   readonly openOrders: readonly OpenOrder[];
-  readonly periodReturn?: PortfolioView["return"];
+  readonly performance?: PerformanceView | null;
 }
 
 const PRICE_SCALE = 8;
@@ -106,7 +104,7 @@ export function buildPortfolioView(input: PortfolioViewInput): PortfolioView {
       availableToInvestCents: balances.availableToTradeCents,
       availableToWithdrawCents: balances.withdrawableCents,
     },
-    return: input.periodReturn ?? null,
+    performance: input.performance ?? null,
     model: input.model ? { code: input.model.code, name: input.model.name } : null,
     positions,
     openOrders: input.openOrders,
