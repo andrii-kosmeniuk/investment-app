@@ -1,4 +1,5 @@
 import type {
+  AppendableEntry,
   ApprovalRequest,
   JournalEntry,
   OrderState,
@@ -9,8 +10,20 @@ export interface UnitOfWork {
   execute<T>(operation: () => Promise<T>): Promise<T>;
 }
 
+export interface AppendResult {
+  readonly status: "inserted" | "duplicate";
+  readonly entry: JournalEntry;
+}
+
 export interface LedgerRepository {
-  append(entry: JournalEntry): Promise<"inserted" | "duplicate">;
+  /**
+   * Seals an entry onto the tip of the hash chain and persists it atomically.
+   * Implementations MUST serialize concurrent appends (so the head-hash read
+   * and the insert cannot interleave) and MUST be idempotent on
+   * `idempotencyKey`: a replay returns the already-stored entry as
+   * `"duplicate"` instead of forking the chain.
+   */
+  append(entry: AppendableEntry): Promise<AppendResult>;
   findByIdempotencyKey(key: string): Promise<JournalEntry | null>;
   listForCustomer(
     customerId: string,

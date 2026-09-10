@@ -1,9 +1,9 @@
 @layer tokens {
   :root {
     color-scheme: light;
-    --font-ui: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
-    --font-code: "Geist Mono", ui-monospace, monospace;
-    --font-display: "Iowan Old Style", "Baskerville", serif;
+    --font-ui: var(--font-inter, "Inter Variable"), "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-code: var(--font-geist-mono, "Geist Mono"), ui-monospace, monospace;
+    --font-display: var(--font-instrument-serif, "Instrument Serif"), "Iowan Old Style", "Baskerville", serif;
 
     --surface-canvas: oklch(0.975 0.008 75);
     --surface-raised: oklch(0.995 0.004 75);

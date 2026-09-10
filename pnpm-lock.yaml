@@ -295,6 +295,12 @@ importers:
 
   packages/database:
     dependencies:
+      '@corgi/application':
+        specifier: workspace:*
+        version: link:../application
+      '@corgi/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@neondatabase/serverless':
         specifier: ^1.0.0
         version: 1.1.0

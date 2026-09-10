@@ -18,12 +18,15 @@ slug="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' 
 path="$directory/$number-$slug.md"
 
 now="$(date '+%Y-%m-%d %H:%M %Z')"
-tplus="not started"
-if [[ -f "$root/.trial-start" ]]; then
-  started="$(cat "$root/.trial-start")"
-  elapsed="$(( $(date +%s) - started ))"
-  tplus="$(printf 'T+%d:%02d' "$((elapsed / 3600))" "$(((elapsed % 3600) / 60))")"
+# Self-heal: .trial-start is gitignored, so seed it (to the kickoff commit time
+# when available, otherwise now) the first time an ADR is created on a machine.
+if [[ ! -f "$root/.trial-start" ]]; then
+  kickoff="$(git -C "$root" log --max-parents=0 --format=%ct HEAD 2>/dev/null | head -1)"
+  printf '%s\n' "${kickoff:-$(date +%s)}" > "$root/.trial-start"
 fi
+started="$(cat "$root/.trial-start")"
+elapsed="$(( $(date +%s) - started ))"
+tplus="$(printf 'T+%d:%02d' "$((elapsed / 3600))" "$(((elapsed % 3600) / 60))")"
 
 cat > "$path" <<EOF
 # $number — $title

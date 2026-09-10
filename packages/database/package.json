@@ -16,6 +16,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@corgi/application": "workspace:*",
+    "@corgi/domain": "workspace:*",
     "@neondatabase/serverless": "^1.0.0",
     "drizzle-orm": "^0.43.1"
   },

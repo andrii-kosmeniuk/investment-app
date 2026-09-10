@@ -1,0 +1,58 @@
+# Render blueprint for the backend deployables.
+# The frontend (apps/web) deploys on Vercel (see apps/web/vercel.json); this
+# file covers the two long-running Node services that Vercel cannot host.
+#
+# Both build from the repo root so pnpm can resolve the @corgi/* workspace
+# packages, then Turborepo compiles each deployable and its dependencies.
+# Secrets use `sync: false` (set them in the Render dashboard); names match
+# the Zod schemas in apps/api/src/config.ts and apps/worker/src/config.ts.
+services:
+  # Fastify HTTP API: REST, Plaid/Persona webhooks, and the MCP endpoint.
+  - type: web
+    name: corgi-api
+    runtime: node
+    plan: starter # webhooks + MCP need an always-on instance; free tier spins down.
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@corgi/api
+    startCommand: node apps/api/dist/server.js
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WEB_ORIGIN
+        sync: false # the Vercel web URL, for CORS
+      - key: DATABASE_URL
+        sync: false # Neon connection string
+      - key: MCP_API_KEY
+        sync: false
+      - key: PLAID_CLIENT_ID
+        sync: false
+      - key: PLAID_SECRET
+        sync: false
+      - key: PERSONA_API_KEY
+        sync: false
+      - key: PERSONA_TEMPLATE_ID
+        sync: false
+      - key: PERSONA_WEBHOOK_SECRET
+        sync: false
+
+  # Alpaca SSE consumer, inbox processor, and cron (valuation/recon/settlement).
+  # Background workers are a paid service on Render (no free tier); keep it always-on.
+  - type: worker
+    name: corgi-worker
+    runtime: node
+    plan: starter
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@corgi/worker
+    startCommand: node apps/worker/dist/main.js
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: ALPACA_KEY
+        sync: false
+      - key: ALPACA_SECRET
+        sync: false

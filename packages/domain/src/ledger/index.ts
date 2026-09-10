@@ -34,6 +34,13 @@ export interface JournalEntry {
 
 export type UnhashedJournalEntry = Omit<JournalEntry, "hash">;
 
+/**
+ * An entry ready to be appended: the domain author supplies everything except
+ * the two fields the ledger owns — the position in the hash chain
+ * (`previousHash`) and the resulting `hash`. Sealing fills both.
+ */
+export type AppendableEntry = Omit<JournalEntry, "hash" | "previousHash">;
+
 export class UnbalancedJournalError extends Error {
   override readonly name = "UnbalancedJournalError";
   constructor(readonly balances: ReadonlyMap<Commodity, bigint>) {
@@ -82,6 +89,42 @@ export function sealJournalEntry(entry: UnhashedJournalEntry): JournalEntry {
   assertBalanced(entry.postings);
   const hash = createHash("sha256").update(canonicalize(entry)).digest("hex");
   return { ...entry, hash };
+}
+
+/**
+ * Seals an appendable entry onto the tip of the chain. The `previousHash` link
+ * is part of the hashed payload, so tampering with any earlier entry breaks
+ * every hash that follows it.
+ */
+export function sealNext(previousHash: string | null, entry: AppendableEntry): JournalEntry {
+  const unhashed: UnhashedJournalEntry =
+    previousHash === null ? { ...entry } : { ...entry, previousHash };
+  return sealJournalEntry(unhashed);
+}
+
+export interface ChainVerification {
+  readonly valid: boolean;
+  /** Index of the first entry that fails verification, or null when intact. */
+  readonly brokenAt: number | null;
+}
+
+/**
+ * Recomputes the hash chain from genesis and checks that each entry links to
+ * its predecessor and hashes to its stored value. Pure and side-effect free so
+ * a "verify chain" action can run anywhere the entries are available.
+ */
+export function verifyHashChain(entries: readonly JournalEntry[]): ChainVerification {
+  let previousHash: string | null = null;
+  let index = 0;
+  for (const entry of entries) {
+    if ((entry.previousHash ?? null) !== previousHash) return { valid: false, brokenAt: index };
+    const { hash: _hash, previousHash: _previousHash, ...appendable } = entry;
+    const resealed = sealNext(previousHash, appendable);
+    if (resealed.hash !== entry.hash) return { valid: false, brokenAt: index };
+    previousHash = entry.hash;
+    index += 1;
+  }
+  return { valid: true, brokenAt: null };
 }
 
 export interface BalanceCutoff {
