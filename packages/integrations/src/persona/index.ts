@@ -69,6 +69,13 @@ export class PersonaIdentityAdapter implements IdentityPort {
     };
   }
 
+  async resumeInquiry(inquiryId: string): Promise<{ sessionToken: string }> {
+    const response = await this.#request<{
+      meta: { "session-token": string };
+    }>(`/api/v1/inquiries/${inquiryId}/resume`, { method: "POST", body: "{}" });
+    return { sessionToken: response.meta["session-token"] };
+  }
+
   async getStatus(
     inquiryId: string,
   ): Promise<"pending" | "needs_review" | "approved" | "declined"> {

@@ -1,39 +1,56 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Brand } from "../components/Brand";
+import { CharacterField } from "../components/CharacterField";
+import { readSessionToken } from "../server/session";
 
-const capabilities = [
-  "Identity verification",
-  "Linked-bank funding",
-  "Model portfolios",
-  "Versioned performance",
+const facts = [
+  "Identity verification before any money moves",
+  "Deposits from a linked bank account",
+  "Four model portfolios, rebalanced monthly",
+  "Returns restated, never rewritten",
 ] as const;
 
-export default function HomePage() {
+export default async function EntryPage() {
+  if (await readSessionToken()) redirect("/overview");
+
   return (
     <main className="entry">
-      <nav className="entry__nav" aria-label="Primary">
-        <Link href="/" className="wordmark">Corgi Invest</Link>
-        <Link href="/ops" className="text-link">Operations</Link>
-      </nav>
+      <header className="entry__nav">
+        <Brand serif />
+        <nav aria-label="Primary">
+          <Link href="/sign-in" className="entry__signin">
+            Sign in
+          </Link>
+        </nav>
+      </header>
 
-      <section className="entry__body">
-        <div>
-          <h1>Your investment history should never disappear.</h1>
+      <section className="entry__grid">
+        <div className="entry__copy">
+          <h1>A clearer view of your investments.</h1>
           <p className="entry__lead">
-            Fund a diversified model portfolio and see exactly what changed,
-            when it changed, and what was known at the time.
+            Fund a model portfolio from your bank, watch every order land, and see exactly what
+            changed, when, and what was known at the time.
           </p>
-          <Link href="/portfolio" className="primary-action">Open demo portfolio</Link>
+          <div className="entry__actions">
+            <Link href="/sign-in" className="button" data-variant="primary">
+              <span className="button__label">Sign in to your account</span>
+            </Link>
+          </div>
         </div>
-
-        <ol className="capability-list">
-          {capabilities.map((capability, index) => (
-            <li key={capability}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              {capability}
-            </li>
-          ))}
-        </ol>
+        <div className="entry__art" aria-hidden="true">
+          <CharacterField animate inkVar="--ink-strong" className="entry__canvas" />
+        </div>
       </section>
+
+      <ol className="entry__facts">
+        {facts.map((fact, index) => (
+          <li key={fact}>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            {fact}
+          </li>
+        ))}
+      </ol>
     </main>
   );
 }

@@ -14,6 +14,12 @@ export interface PlaceOrderCommand {
   readonly notionalCents: bigint;
   readonly side: "buy" | "sell";
   readonly requestedByActorId: string;
+  /**
+   * The customer has explicitly confirmed this order in the product (design
+   * brief §9.5). Satisfies the confirmation threshold; the ops maker-checker
+   * queue is for money-out and bulk rebalances, not a customer's own buys.
+   */
+  readonly customerConfirmed?: boolean;
 }
 
 export interface PlaceOrderDeps {
@@ -61,7 +67,7 @@ export async function placeOrder(
     }
   }
 
-  if (command.notionalCents >= deps.confirmationThresholdCents) {
+  if (command.notionalCents >= deps.confirmationThresholdCents && !command.customerConfirmed) {
     const approvalId = deps.ids.next();
     await deps.approvals.create({
       id: approvalId,

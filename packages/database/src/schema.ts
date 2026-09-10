@@ -42,6 +42,20 @@ export const customers = pgTable("customers", {
   createdAt: createdAt(),
 });
 
+/**
+ * Sign-in credentials live apart from the profile so a customer row can exist
+ * (seeded, imported, or created by ops) before it can sign in, and so profile
+ * reads never touch the hash. One password per customer for this build.
+ */
+export const customerCredentials = pgTable("customer_credentials", {
+  customerId: uuid("customer_id")
+    .primaryKey()
+    .references(() => customers.id),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const actors = pgTable("actors", {
   id: id(),
   email: text("email").notNull().unique(),
@@ -70,6 +84,9 @@ export const bankAccounts = pgTable(
     id: id(),
     customerId: uuid("customer_id").notNull().references(() => customers.id),
     providerAccountId: text("provider_account_id").notNull(),
+    // Plaid item credential needed for Transfer calls. Sandbox-only storage;
+    // production must encrypt at rest or move to a secrets vault (ADR-0003).
+    providerAccessToken: text("provider_access_token").notNull(),
     institutionName: text("institution_name").notNull(),
     accountMask: text("account_mask").notNull(),
     status: text("status").notNull(),

@@ -7,3 +7,29 @@ export class OrderNotPermittedError extends Error {
 export class InsufficientFundsError extends Error {
   override readonly name = "InsufficientFundsError";
 }
+
+/** The caller asked for something that does not exist or is not theirs. */
+export class NotFoundError extends Error {
+  override readonly name = "NotFoundError";
+}
+
+/** The input is well-formed but violates a business rule (amount, state). */
+export class ValidationError extends Error {
+  override readonly name = "ValidationError";
+}
+
+/** At least one order needs the customer's explicit confirmation before it is placed. */
+export class ConfirmationRequiredError extends Error {
+  override readonly name = "ConfirmationRequiredError";
+  constructor(
+    message: string,
+    readonly legs: readonly { symbol: string; notionalCents: bigint }[],
+  ) {
+    super(message);
+  }
+}
+
+/** The customer's current state forbids the action (e.g. KYC not approved). */
+export class NotPermittedError extends Error {
+  override readonly name = "NotPermittedError";
+}

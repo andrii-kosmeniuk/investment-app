@@ -13,9 +13,12 @@ import {
 } from "@corgi/database";
 import { and, desc, eq, gte, lte } from "drizzle-orm";
 import type { AgentReadService, AgentWriteService } from "@corgi/mcp";
+import type { CustomerServices } from "./customer/services.js";
 
 export interface ApiServices {
   readonly database: Database;
+  /** Signed-in customer surface; composed over the transactional (write) pool. */
+  readonly customer: CustomerServices;
   readonly inbox: {
     receive(event: {
       provider: "alpaca" | "plaid" | "persona" | "custodian";
@@ -30,7 +33,7 @@ export interface ApiServices {
   readonly agentWrites: AgentWriteService;
 }
 
-export function createServices(database: Database): ApiServices {
+export function createServices(database: Database, customer: CustomerServices): ApiServices {
   const agentActor = async () => {
     const [actor] = await database
       .select({ id: actors.id })
@@ -43,6 +46,7 @@ export function createServices(database: Database): ApiServices {
 
   return {
     database,
+    customer,
     inbox: {
       async receive(event) {
         const result = await database

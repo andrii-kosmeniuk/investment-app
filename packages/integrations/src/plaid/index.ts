@@ -29,6 +29,15 @@ export async function verifyPlaidWebhook(input: {
   return payload.request_body_sha256 === digest;
 }
 
+/** "123456" cents → "1234.56" without passing through a float. */
+export function formatCents(amountCents: bigint): string {
+  const negative = amountCents < 0n;
+  const absolute = negative ? -amountCents : amountCents;
+  const whole = absolute / 100n;
+  const fraction = (absolute % 100n).toString().padStart(2, "0");
+  return `${negative ? "-" : ""}${whole}.${fraction}`;
+}
+
 export class PlaidFundingAdapter implements FundingPort {
   readonly #request;
   constructor(private readonly config: PlaidConfig) {
@@ -60,25 +69,57 @@ export class PlaidFundingAdapter implements FundingPort {
     return response.link_token;
   }
 
+  async exchangePublicToken(publicToken: string): Promise<{ accessToken: string; itemId: string }> {
+    const response = await this.#request<{ access_token: string; item_id: string }>(
+      "/item/public_token/exchange",
+      { method: "POST", body: this.#body({ public_token: publicToken }) },
+    );
+    return { accessToken: response.access_token, itemId: response.item_id };
+  }
+
+  /**
+   * Plaid Transfer is two calls: an authorization decision, then the transfer
+   * itself against that decision. Both carry the item's access token; the
+   * idempotency key protects the authorization so a retried request cannot
+   * debit twice. Amounts are formatted from integer cents, never floats.
+   */
   async createDeposit(input: {
     customerId: string;
-    bankAccountId: string;
+    accessToken: string;
+    providerAccountId: string;
     amountCents: bigint;
     idempotencyKey: string;
   }): Promise<{ transferId: string; status: string }> {
+    const amount = formatCents(input.amountCents);
+    const authorization = await this.#request<{
+      authorization: { id: string; decision: string; decision_rationale?: { code?: string; description?: string } | null };
+    }>("/transfer/authorization/create", {
+      method: "POST",
+      body: this.#body({
+        access_token: input.accessToken,
+        account_id: input.providerAccountId,
+        idempotency_key: input.idempotencyKey,
+        type: "debit",
+        network: "ach",
+        amount,
+        ach_class: "web",
+        user: { legal_name: "Sandbox Investor" },
+      }),
+    });
+    if (authorization.authorization.decision === "declined") {
+      const reason = authorization.authorization.decision_rationale?.description ?? "declined by Plaid";
+      throw new Error(`Transfer authorization declined: ${reason}`);
+    }
+
     const response = await this.#request<{
       transfer: { id: string; status: string };
     }>("/transfer/create", {
       method: "POST",
       body: this.#body({
-        account_id: input.bankAccountId,
-        idempotency_key: input.idempotencyKey,
-        amount: (Number(input.amountCents) / 100).toFixed(2),
-        description: `Investment deposit ${input.customerId}`,
-        type: "debit",
-        network: "ach",
-        ach_class: "web",
-        user: { legal_name: "Sandbox Investor" },
+        access_token: input.accessToken,
+        account_id: input.providerAccountId,
+        authorization_id: authorization.authorization.id,
+        description: "Corgi Inv",
       }),
     });
     return { transferId: response.transfer.id, status: response.transfer.status };

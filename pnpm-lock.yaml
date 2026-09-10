@@ -109,6 +109,9 @@ importers:
 
   .:
     dependencies:
+      '@corgi/application':
+        specifier: workspace:*
+        version: link:packages/application
       '@corgi/database':
         specifier: workspace:*
         version: link:packages/database
@@ -118,6 +121,9 @@ importers:
       '@neon/env':
         specifier: ^1.2.3
         version: 1.2.3
+      drizzle-orm:
+        specifier: ^0.43.1
+        version: 0.43.1(@neondatabase/serverless@1.1.0)
     devDependencies:
       '@types/node':
         specifier: ^22.15.0
@@ -204,6 +210,9 @@ importers:
       react-dom:
         specifier: 19.1.1
         version: 19.1.1(react@19.1.1)
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.3.1

@@ -4,6 +4,7 @@ import rawBody from "fastify-raw-body";
 import { sql } from "drizzle-orm";
 import type { ApiConfig } from "./config.js";
 import type { ApiServices } from "./services.js";
+import { registerCustomerRoutes } from "./customer/routes.js";
 import { registerMcpRoute } from "./routes/mcp.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
 
@@ -12,18 +13,21 @@ export async function buildApi(
   services: ApiServices,
 ): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: {
-      level: config.NODE_ENV === "production" ? "info" : "debug",
-      redact: {
-        paths: [
-          "req.headers.authorization",
-          "req.headers.cookie",
-          "req.headers.plaid-verification",
-          "req.headers.persona-signature",
-        ],
-        censor: "[REDACTED]",
-      },
-    },
+    logger:
+      config.NODE_ENV === "test"
+        ? false
+        : {
+            level: config.NODE_ENV === "production" ? "info" : "debug",
+            redact: {
+              paths: [
+                "req.headers.authorization",
+                "req.headers.cookie",
+                "req.headers.plaid-verification",
+                "req.headers.persona-signature",
+              ],
+              censor: "[REDACTED]",
+            },
+          },
     bodyLimit: 1_048_576,
     requestIdHeader: "x-request-id",
   });
@@ -50,6 +54,8 @@ export async function buildApi(
     async (api) => {
       await registerWebhookRoutes(api, services, config);
       await registerMcpRoute(api, services, config);
+      // Own plugin scope so the customer error mapping cannot leak into webhooks/MCP.
+      await api.register((customerApi) => registerCustomerRoutes(customerApi, services.customer));
     },
     { prefix: "/v1" },
   );

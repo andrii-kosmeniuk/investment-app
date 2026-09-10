@@ -5,6 +5,10 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "dist/**"]
     },
+    "@corgi/web#build": {
+      "dependsOn": ["^build", "typecheck"],
+      "outputs": [".next/**"]
+    },
     "dev": {
       "cache": false,
       "persistent": true

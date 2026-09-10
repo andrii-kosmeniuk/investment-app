@@ -20,11 +20,21 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: ENVIRONMENT_NAME
+        value: sandbox # shown as a badge in the customer UI; "production" hides it
       - key: WEB_ORIGIN
         sync: false # the Vercel web URL, for CORS
       - key: DATABASE_URL
-        sync: false # Neon connection string
+        sync: false # Neon pooled URL (HTTP reads)
+      - key: DATABASE_URL_UNPOOLED
+        sync: false # Neon direct URL (deposits and orders run in interactive transactions)
+      - key: SESSION_SECRET
+        generateValue: true # ≥32 chars; rotating it signs every customer out
       - key: MCP_API_KEY
+        sync: false
+      - key: ALPACA_KEY
+        sync: false # customer account creation and order placement from chooseModel
+      - key: ALPACA_SECRET
         sync: false
       - key: PLAID_CLIENT_ID
         sync: false

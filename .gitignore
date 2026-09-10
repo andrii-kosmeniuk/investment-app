@@ -1,5 +1,7 @@
 # Working documents (not deliverables)
 docs/PLAN.md
+references/
+!references/ui/design_brief.md
 
 # Agent tooling: keep skill definitions, drop the 16 MB platform binary
 # (restore with: npx impeccable install --providers=cursor --scope=project)

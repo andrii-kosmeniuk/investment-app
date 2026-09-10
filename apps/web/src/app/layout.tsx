@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Instrument_Serif, Inter } from "next/font/google";
 import "@corgi/ui/tokens.css";
+import "@corgi/ui/styles.css";
 import "./styles.css";
 
 const inter = Inter({

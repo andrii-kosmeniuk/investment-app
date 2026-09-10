@@ -1,3 +1,4 @@
+export { ProviderHttpError } from "./http.js";
 export * from "./alpaca/index.js";
 export * from "./custodian-simulator/index.js";
 export * from "./market-data/index.js";
