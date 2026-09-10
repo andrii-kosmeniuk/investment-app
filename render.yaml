@@ -38,6 +38,8 @@ services:
         sync: false # customer account creation and order placement from chooseModel
       - key: ALPACA_SECRET
         sync: false
+      - key: ALPACA_SANDBOX_ACCOUNT_ID
+        sync: false # optional: dashboard-created sandbox account used when POST /v1/accounts answers 403
       - key: ALPACA_MARKET_DATA_BASE_URL
         value: https://data.sandbox.alpaca.markets # daily bars for the live-fire "collect closes" action
       - key: PLAID_CLIENT_ID

@@ -29,6 +29,8 @@ const schema = z.object({
   ALPACA_KEY: optionalSecret,
   ALPACA_SECRET: optionalSecret,
   ALPACA_MARKET_DATA_BASE_URL: z.string().url().default("https://data.sandbox.alpaca.markets"),
+  /** Sandbox fallback when the Broker tenant forbids API account creation; see AlpacaConfig. */
+  ALPACA_SANDBOX_ACCOUNT_ID: z.string().uuid().optional(),
   MCP_API_KEY: z.string().min(24),
   /** Operator token for the live-fire console and restatement audit; unset → those routes answer 503. */
   LIVE_FIRE_TOKEN: z.string().min(24).optional(),

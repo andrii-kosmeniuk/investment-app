@@ -67,7 +67,7 @@ describe("PlaidFundingAdapter.createDeposit", () => {
   it("stops after a declined authorization and never creates the transfer", async () => {
     stubFetch((path) =>
       path.endsWith("/transfer/authorization/create")
-        ? { authorization: { id: "auth-2", decision: "declined", decision_rationale: { description: "NSF" } } }
+        ? { authorization: { id: "auth-2", decision: "declined", decision_rationale: { code: "NSF", description: "NSF" } } }
         : respond(path),
     );
     await expect(
@@ -78,7 +78,7 @@ describe("PlaidFundingAdapter.createDeposit", () => {
         amountCents: 100n,
         idempotencyKey: "idem-2",
       }),
-    ).rejects.toThrow(/declined.*NSF/);
+    ).rejects.toMatchObject({ name: "DepositDeclinedError", code: "NSF", message: /declined.*NSF/ });
     expect(calls.map((call) => call.path)).toEqual(["/transfer/authorization/create"]);
   });
 

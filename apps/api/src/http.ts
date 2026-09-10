@@ -1,5 +1,6 @@
 import {
   ConfirmationRequiredError,
+  DepositDeclinedError,
   InsufficientFundsError,
   NotFoundError,
   NotPermittedError,
@@ -53,6 +54,9 @@ export function toHttp(error: unknown): { statusCode: number; body: Record<strin
     return { statusCode: 403, body: { error: "not_permitted", message: error.message } };
   }
   if (error instanceof InsufficientFundsError) return { statusCode: 409, body: { error: "insufficient_funds", message: error.message } };
+  if (error instanceof DepositDeclinedError) {
+    return { statusCode: 422, body: { error: "deposit_declined", message: error.message, reasonCode: error.code } };
+  }
   if (error instanceof ProviderHttpError) {
     return { statusCode: 502, body: { error: "provider_unavailable", message: `${error.provider} returned HTTP ${error.status}` } };
   }

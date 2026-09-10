@@ -4,12 +4,19 @@ import type {
   ProviderEvent,
 } from "@corgi/application";
 import { z } from "zod";
-import { createProviderClient } from "../http.js";
+import { ProviderHttpError, createProviderClient } from "../http.js";
 
 export interface AlpacaConfig {
   readonly baseUrl: string;
   readonly key: string;
   readonly secret: string;
+  /**
+   * Sandbox only. Some Broker sandbox tenants answer `403 request is forbidden`
+   * to `POST /v1/accounts` until Alpaca completes the correspondent setup. When
+   * set, that pre-provisioned dashboard account is used instead of failing, so
+   * the order rail can still be exercised end to end (ADR-0004 assumptions).
+   */
+  readonly sandboxAccountId?: string | undefined;
 }
 
 const positionSchema = z.object({
@@ -33,17 +40,24 @@ export class AlpacaBrokerAdapter implements BrokerPort {
   }
 
   async createAccount(customerId: string): Promise<{ accountId: string; status: string }> {
-    const result = await this.#request<{ id: string; status: string }>("/v1/accounts", {
-      method: "POST",
-      body: JSON.stringify({
-        contact: { email_address: `${customerId}@sandbox.invalid` },
-        identity: { given_name: "Sandbox", family_name: "Investor" },
-        agreements: [],
-        disclosures: {},
-        trusted_contact: {},
-      }),
-    });
-    return { accountId: result.id, status: result.status };
+    try {
+      const result = await this.#request<{ id: string; status: string }>("/v1/accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          contact: { email_address: `${customerId}@sandbox.invalid` },
+          identity: { given_name: "Sandbox", family_name: "Investor" },
+          agreements: [],
+          disclosures: {},
+          trusted_contact: {},
+        }),
+      });
+      return { accountId: result.id, status: result.status };
+    } catch (error) {
+      if (error instanceof ProviderHttpError && error.status === 403 && this.#config.sandboxAccountId) {
+        return { accountId: this.#config.sandboxAccountId, status: "ACTIVE" };
+      }
+      throw error;
+    }
   }
 
   async submitNotionalOrder(input: {

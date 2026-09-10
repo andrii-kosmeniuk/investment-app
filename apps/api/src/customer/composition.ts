@@ -115,6 +115,7 @@ export function createCustomerServices(db: TransactionalDatabase, config: ApiCon
             baseUrl: config.ALPACA_BROKER_BASE_URL,
             key: config.ALPACA_KEY,
             secret: config.ALPACA_SECRET,
+            sandboxAccountId: config.ALPACA_SANDBOX_ACCOUNT_ID,
           })
         : null,
     marketData:

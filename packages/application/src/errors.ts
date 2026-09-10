@@ -33,3 +33,19 @@ export class ConfirmationRequiredError extends Error {
 export class NotPermittedError extends Error {
   override readonly name = "NotPermittedError";
 }
+
+/**
+ * The funding provider refused to authorise the debit (insufficient funds,
+ * risk rule, closed account). Nothing was created; the customer must be told
+ * the provider's reason, not "something went wrong".
+ */
+export class DepositDeclinedError extends Error {
+  override readonly name = "DepositDeclinedError";
+  constructor(
+    /** Provider rationale code, e.g. `NSF`, `RISK`, `MANUALLY_VERIFIED_ITEM`. */
+    readonly code: string,
+    readonly description: string,
+  ) {
+    super(`The bank declined the transfer: ${description}`);
+  }
+}

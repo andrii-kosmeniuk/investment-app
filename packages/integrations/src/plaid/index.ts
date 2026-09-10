@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { importJWK, jwtVerify, type JWK } from "jose";
-import type { FundingPort, ProviderEvent } from "@corgi/application";
+import { DepositDeclinedError, type FundingPort, type ProviderEvent } from "@corgi/application";
 import { createProviderClient } from "../http.js";
 
 export interface PlaidConfig {
@@ -107,8 +107,8 @@ export class PlaidFundingAdapter implements FundingPort {
       }),
     });
     if (authorization.authorization.decision === "declined") {
-      const reason = authorization.authorization.decision_rationale?.description ?? "declined by Plaid";
-      throw new Error(`Transfer authorization declined: ${reason}`);
+      const rationale = authorization.authorization.decision_rationale;
+      throw new DepositDeclinedError(rationale?.code ?? "DECLINED", rationale?.description ?? "declined by Plaid");
     }
 
     const response = await this.#request<{
