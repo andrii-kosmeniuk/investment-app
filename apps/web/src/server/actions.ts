@@ -115,6 +115,11 @@ export async function chooseModelAction(modelCode: string, confirmed: boolean): 
     if (error instanceof ApiClientError && error.confirmation) {
       return ok({ legs: error.confirmation.legs, placed: false });
     }
+    // The model assignment is saved before the legs are routed, so a broker
+    // failure can leave a chosen model with no orders: re-read so the page
+    // shows what actually persisted instead of the pre-click state.
+    revalidatePath("/portfolio");
+    revalidatePath("/overview");
     return fail(error);
   }
 }

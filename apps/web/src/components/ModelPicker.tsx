@@ -7,6 +7,17 @@ import { type ChooseModelResult, chooseModelAction } from "../server/actions";
 
 const RISK = ["", "Conservative", "Cautious", "Balanced", "Growth", "Aggressive"] as const;
 
+function failureCopy(code: string | null, error: string | null): string {
+  switch (code) {
+    case "alpaca_not_configured":
+      return "Order placement is not available in this environment yet.";
+    case "provider_unavailable":
+      return "Our broker did not accept the request, so nothing was bought. Try again in a moment.";
+    default:
+      return error ?? "The model could not be chosen.";
+  }
+}
+
 /**
  * Model catalogue with an explicit confirmation sheet. The server decides
  * whether confirmation is required (any leg at/above the threshold) and returns
@@ -39,7 +50,7 @@ export function ModelPicker({
         setPlan(null);
         setOutcome({
           tone: "negative",
-          text: result.code === "alpaca_not_configured" ? "Order placement is not available in this environment yet." : result.error ?? "The model could not be chosen.",
+          text: failureCopy(result.code, result.error),
         });
         return;
       }

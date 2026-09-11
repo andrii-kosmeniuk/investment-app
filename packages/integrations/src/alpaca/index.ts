@@ -17,6 +17,74 @@ export interface AlpacaConfig {
    * the order rail can still be exercised end to end (ADR-0004 assumptions).
    */
   readonly sandboxAccountId?: string | undefined;
+  /** Source of "now" for agreement timestamps; defaults to the system clock. */
+  readonly clock?: (() => Date) | undefined;
+}
+
+/**
+ * Deterministic 9-digit tax id derived from the customer id that passes
+ * Alpaca's SSN format rules: area not 000/666/9xx, group not 00, serial not
+ * 0000, and no run of consecutive or identical digits.
+ */
+export function sandboxTaxId(customerId: string): string {
+  let hash = 2166136261;
+  for (const char of customerId) {
+    hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0;
+  }
+  const area = 100 + (hash % 566); // 100..665
+  const group = 10 + ((hash >>> 8) % 90); // 10..99
+  let serial = 1000 + ((hash >>> 16) % 9000); // 1000..9999
+  let digits = `${area}${String(group).padStart(2, "0")}${serial}`;
+  const monotone = (value: string) =>
+    [...value].every((d, i, all) => i === 0 || Number(d) === Number(all[i - 1]) + 1) ||
+    [...value].every((d, i, all) => i === 0 || Number(d) === Number(all[i - 1]) - 1) ||
+    new Set(value).size === 1;
+  if (monotone(digits)) {
+    serial = serial === 9999 ? 1001 : serial + 1;
+    digits = `${area}${String(group).padStart(2, "0")}${serial}`;
+  }
+  return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
+}
+
+/**
+ * Sandbox account application. The identity is a placeholder keyed to the
+ * customer id: the customer's real KYC lives in Persona (ADR-0002) and the
+ * brief does not ask us to forward it to the broker, so only the fields Alpaca
+ * requires to open a fully-disclosed sandbox account are sent.
+ */
+export function sandboxAccountApplication(customerId: string, now: Date) {
+  return {
+    contact: {
+      email_address: `corgi+${customerId}@example.com`,
+      phone_number: "555-666-7788",
+      street_address: ["20 N San Mateo Dr"],
+      city: "San Mateo",
+      state: "CA",
+      postal_code: "94401",
+      country: "USA",
+    },
+    identity: {
+      given_name: "Sandbox",
+      family_name: `Customer ${customerId.slice(0, 8)}`,
+      date_of_birth: "1990-01-01",
+      tax_id: sandboxTaxId(customerId),
+      tax_id_type: "USA_SSN",
+      country_of_citizenship: "USA",
+      country_of_birth: "USA",
+      country_of_tax_residence: "USA",
+      funding_source: ["employment_income"],
+    },
+    disclosures: {
+      is_control_person: false,
+      is_affiliated_exchange_or_finra: false,
+      is_politically_exposed: false,
+      immediate_family_exposed: false,
+    },
+    agreements: [
+      { agreement: "customer_agreement", signed_at: now.toISOString(), ip_address: "127.0.0.1" },
+    ],
+    enabled_assets: ["us_equity"],
+  };
 }
 
 const positionSchema = z.object({
@@ -43,13 +111,7 @@ export class AlpacaBrokerAdapter implements BrokerPort {
     try {
       const result = await this.#request<{ id: string; status: string }>("/v1/accounts", {
         method: "POST",
-        body: JSON.stringify({
-          contact: { email_address: `${customerId}@sandbox.invalid` },
-          identity: { given_name: "Sandbox", family_name: "Investor" },
-          agreements: [],
-          disclosures: {},
-          trusted_contact: {},
-        }),
+        body: JSON.stringify(sandboxAccountApplication(customerId, this.#config.clock?.() ?? new Date())),
       });
       return { accountId: result.id, status: result.status };
     } catch (error) {
