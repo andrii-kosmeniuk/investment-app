@@ -1,6 +1,7 @@
 import {
   ConfirmationRequiredError,
   DepositDeclinedError,
+  EmailTakenError,
   InsufficientFundsError,
   NotFoundError,
   NotPermittedError,
@@ -55,6 +56,7 @@ export function toHttp(error: unknown): { statusCode: number; body: Record<strin
     return { statusCode: 403, body: { error: "not_permitted", message: error.message } };
   }
   if (error instanceof InsufficientFundsError) return { statusCode: 409, body: { error: "insufficient_funds", message: error.message } };
+  if (error instanceof EmailTakenError) return { statusCode: 409, body: { error: "email_taken", message: error.message } };
   if (error instanceof InvalidApprovalError) return { statusCode: 409, body: { error: "invalid_approval", message: error.message } };
   if (error instanceof CustodianFileError) return { statusCode: 422, body: { error: "custodian_file_invalid", message: error.message } };
   if (error instanceof DepositDeclinedError) {

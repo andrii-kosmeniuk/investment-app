@@ -19,6 +19,13 @@ export const signInRequest = z.object({
   password: z.string().min(1).max(256),
 });
 
+/** Self-serve registration (ADR-0006). Length limits mirror the use-case. */
+export const signUpRequest = z.object({
+  email: z.string().trim().email().max(254),
+  password: z.string().min(10).max(256),
+  displayName: z.string().trim().min(2).max(80),
+});
+
 export const customerSummary = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
@@ -519,6 +526,7 @@ export const releaseTradingBlockResponse = z.object({ customerId: z.string().uui
 
 export type KycStatus = z.infer<typeof kycStatus>;
 export type SignInRequest = z.infer<typeof signInRequest>;
+export type SignUpRequest = z.infer<typeof signUpRequest>;
 export type CustomerSummary = z.infer<typeof customerSummary>;
 export type SessionResponse = z.infer<typeof sessionResponse>;
 export type MeResponse = z.infer<typeof meResponse>;

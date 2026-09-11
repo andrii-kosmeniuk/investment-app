@@ -22,7 +22,7 @@ import type {
   ProviderEvent,
   TransferRecord,
 } from "@corgi/application";
-import { hashPassword } from "@corgi/application";
+import { EmailTakenError, hashPassword } from "@corgi/application";
 import {
   FakeActorDirectory,
   FakeApprovalRepository,
@@ -337,6 +337,23 @@ export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}
       findProfileByEmail: (email) => Promise.resolve(state.profiles.find((profile) => profile.email === email) ?? null),
     },
     credentials: { findPasswordHash: (id) => Promise.resolve(state.passwordHashes[id] ?? null) },
+    registry: {
+      create: (customer) => {
+        if (state.profiles.some((profile) => profile.email === customer.email)) {
+          return Promise.reject(new EmailTakenError("An account with this email already exists"));
+        }
+        const profile: CustomerProfile = {
+          id: customer.id,
+          email: customer.email,
+          displayName: customer.displayName,
+          kycStatus: "not_started",
+          tradingBlocked: true,
+        };
+        state.profiles.push(profile);
+        state.passwordHashes[customer.id] = customer.passwordHash;
+        return Promise.resolve(profile);
+      },
+    },
     customers: {
       findById: (id): Promise<CustomerRecord | null> => {
         const profile = state.profiles.find((candidate) => candidate.id === id);

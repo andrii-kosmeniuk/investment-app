@@ -155,6 +155,11 @@ export function createApiClient(options: ApiClientOptions) {
   return {
     signIn: (email: string, password: string): Promise<SessionResponse> =>
       call("POST", "/v1/auth/sign-in", sessionResponse, { email, password }),
+    /** Self-serve registration (ADR-0006); the API answers 409 `email_taken` for a known email. */
+    signUp: (input: { email: string; password: string; displayName: string }): Promise<SessionResponse> =>
+      call("POST", "/v1/auth/sign-up", sessionResponse, input),
+    /** Public model catalogue for the landing page; no session needed. */
+    publicModels: (): Promise<ModelsResponse> => call("GET", "/v1/models", modelsResponse),
     me: (): Promise<MeResponse> => call("GET", "/v1/customer/me", meResponse),
     onboarding: (): Promise<OnboardingResponse> => call("GET", "/v1/customer/onboarding", onboardingResponse),
     startVerification: (): Promise<VerificationSessionResponse> =>

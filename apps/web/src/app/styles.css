@@ -211,6 +211,524 @@ code {
   justify-self: start;
 }
 
+.signin-form__switch {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.signin-form__switch a {
+  color: var(--accent-text);
+  text-underline-offset: 0.3em;
+}
+
+/* ---- landing page: field guide (ADR-0006) ------------------------------ */
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.landing__header {
+  align-items: center;
+  background: var(--surface-canvas);
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: auto 1fr auto;
+  min-height: 4.5rem;
+  padding: 0 clamp(1.25rem, 3vw, 3rem);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.landing__links {
+  display: flex;
+  gap: clamp(1rem, 2.5vw, 2rem);
+  justify-content: center;
+}
+
+.landing__links a {
+  border-bottom: 1px solid transparent;
+  color: var(--ink-default);
+  font-size: 0.875rem;
+  padding: 0.25rem 0;
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-enter), border-color var(--duration-fast) var(--ease-enter);
+}
+
+.landing__links a:hover {
+  border-bottom-color: var(--ink-strong);
+  color: var(--ink-strong);
+}
+
+.landing__auth {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.landing__auth-link {
+  border-bottom: 1px solid transparent;
+  color: var(--ink-default);
+  font-size: 0.875rem;
+  padding: 0.25rem 0;
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-enter), border-color var(--duration-fast) var(--ease-enter);
+}
+
+.landing__auth-link:hover {
+  border-bottom-color: var(--ink-strong);
+  color: var(--ink-strong);
+}
+
+.landing__burger {
+  align-items: center;
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  color: var(--ink-strong);
+  cursor: pointer;
+  display: none;
+  height: 2.75rem;
+  justify-content: center;
+  padding: 0;
+  width: 2.75rem;
+}
+
+.landing__burger-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: square;
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform var(--duration-base) var(--ease-enter), opacity var(--duration-fast) var(--ease-enter);
+}
+
+.landing__header[data-open] .landing__burger-line:nth-child(1) {
+  transform: translateY(5px) rotate(45deg);
+}
+
+.landing__header[data-open] .landing__burger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.landing__header[data-open] .landing__burger-line:nth-child(3) {
+  transform: translateY(-5px) rotate(-45deg);
+}
+
+.landing__menu {
+  display: none;
+}
+
+.landing__main {
+  display: block;
+  min-height: 0;
+}
+
+/* The sticky header already draws the rule; a second one directly beneath it would read as a mistake. */
+.landing__main .entry__grid {
+  border-top: 0;
+  margin-top: 0;
+  min-height: min(36rem, calc(100svh - 13rem));
+  padding-top: clamp(3rem, 6vw, 5rem);
+}
+
+.entry__secondary {
+  font-size: 0.9375rem;
+}
+
+/* One plate: figure + caption, an ink rule that draws in when it enters view. */
+.plate {
+  display: grid;
+  gap: clamp(2rem, 5vw, 5rem);
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  margin-top: clamp(4rem, 8vw, 7rem);
+  padding-top: 2.5rem;
+  position: relative;
+  scroll-margin-top: 5.5rem;
+}
+
+.plate__rule {
+  background: var(--ink-strong);
+  height: 1px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform-origin: left;
+}
+
+/* Flipped plates keep the figure in the narrower column; only the side changes. */
+.plate[data-flip] {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+}
+
+.plate[data-flip] .plate__figure {
+  order: 2;
+}
+
+.plate__figure {
+  align-content: start;
+  align-self: start;
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  position: sticky;
+  top: 6rem;
+}
+
+.plate__frames {
+  aspect-ratio: 3 / 4;
+  background: var(--surface-canvas);
+  overflow: hidden;
+  position: relative;
+}
+
+.plate__frame {
+  height: 100%;
+  inset: 0;
+  mix-blend-mode: multiply;
+  object-fit: cover;
+  position: absolute;
+  width: 100%;
+}
+
+.plate__frame--b {
+  animation: plate-breathe 10s ease-in-out infinite;
+  opacity: 0;
+}
+
+.plate__figure figcaption {
+  color: var(--accent-text);
+  font-family: var(--font-code);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.plate__caption {
+  align-self: center;
+  display: grid;
+  gap: 1.25rem;
+  max-width: 40rem;
+}
+
+.plate__caption h2 {
+  color: var(--ink-strong);
+  font-size: clamp(1.75rem, 3vw, 2.375rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.plate__caption p {
+  color: var(--ink-default);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.plate__caption .plate__note,
+.plate__fallback {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.plate__steps {
+  border-top: 1px solid var(--line);
+  counter-reset: step;
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+}
+
+.plate__steps li {
+  border-bottom: 1px solid var(--line);
+  counter-increment: step;
+  display: grid;
+  gap: 0.15rem 1rem;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  padding: 0.85rem 0;
+}
+
+.plate__steps li::before {
+  color: var(--accent-text);
+  content: counter(step, decimal-leading-zero);
+  font-family: var(--font-code);
+  font-size: 0.75rem;
+  grid-row: 1 / span 2;
+  padding-top: 0.25rem;
+}
+
+.plate__steps strong {
+  color: var(--ink-strong);
+  font-weight: 560;
+}
+
+.plate__steps span {
+  color: var(--ink-default);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.plate__models {
+  border-top: 1px solid var(--line);
+  display: grid;
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+}
+
+/* Direct children only: the allocation legend nested inside is its own list. */
+.plate__models > li {
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem 0;
+}
+
+.plate__model-head {
+  align-items: baseline;
+  display: flex;
+  gap: 0.25rem 1rem;
+  justify-content: space-between;
+}
+
+.plate__model-head strong {
+  color: var(--ink-strong);
+  font-weight: 560;
+}
+
+.plate__model-head span {
+  font-size: 0.8125rem;
+}
+
+.plate__compare {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: 1rem 1.5rem;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  padding: 1.25rem 1.5rem;
+}
+
+.plate__compare > div {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+}
+
+.plate__compare-label {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.plate__compare-value {
+  color: var(--ink-strong);
+  font-size: 2rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.plate__compare-arrow {
+  color: var(--ink-muted);
+  font-size: 1.25rem;
+}
+
+.plate__compare-reason {
+  color: var(--ink-default);
+  font-size: 0.8125rem;
+}
+
+.plate__providers {
+  border-top: 1px solid var(--line);
+  display: grid;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.plate__providers > div {
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 0.15rem 1.5rem;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+  padding: 0.75rem 0;
+}
+
+.plate__providers dt {
+  color: var(--ink-strong);
+  font-size: 0.9375rem;
+  font-weight: 560;
+}
+
+.plate__providers dd {
+  color: var(--ink-default);
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+.plate__badge {
+  display: flex;
+  margin: 0;
+}
+
+/* The rule spans the page like every other divider; only the measure is narrow. */
+.landing__close {
+  border-top: 1px solid var(--ink-strong);
+  display: grid;
+  gap: 1.5rem;
+  justify-items: start;
+  margin-top: clamp(4rem, 8vw, 7rem);
+  padding-top: 2.5rem;
+}
+
+.landing__close > * {
+  max-width: 46rem;
+}
+
+.landing__close h2 {
+  color: var(--ink-strong);
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1;
+  margin: 0;
+}
+
+.landing__close .entry__lead {
+  margin: 0;
+}
+
+.landing__footer {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 1rem 2rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  margin-top: clamp(3rem, 6vw, 5rem);
+  padding: 2rem clamp(1.25rem, 3vw, 3rem) 3rem;
+}
+
+.landing__footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  justify-content: flex-end;
+}
+
+.landing__footer nav a {
+  color: var(--ink-default);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.landing__footer nav a:hover {
+  color: var(--ink-strong);
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+.landing__footer p {
+  font-size: 0.8125rem;
+  grid-column: 1 / -1;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 60ch;
+}
+
+/* Entrance motion: the rule draws in 4 px steps, the caption rises once.
+   Without JS the plate never receives data-inview and stays fully visible. */
+.plate[data-inview="pending"] .plate__rule {
+  transform: scaleX(0);
+}
+
+.plate[data-inview="pending"] .plate__caption > * {
+  opacity: 0;
+}
+
+.plate[data-inview="true"] .plate__rule {
+  animation: plate-rule var(--duration-slow) steps(8, end) both;
+}
+
+.plate[data-inview="true"] .plate__caption > * {
+  animation: plate-rise var(--duration-slow) var(--ease-enter) both;
+}
+
+.plate[data-inview="true"] .plate__caption > :nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.plate[data-inview="true"] .plate__caption > :nth-child(n + 3) {
+  animation-delay: 120ms;
+}
+
+@keyframes plate-rule {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes plate-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes plate-breathe {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes menu-rise {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plate__frame--b,
+  .plate[data-inview="true"] .plate__rule,
+  .plate[data-inview="true"] .plate__caption > * {
+    animation: none;
+  }
+
+  .plate[data-inview="pending"] .plate__rule {
+    transform: none;
+  }
+
+  .plate[data-inview="pending"] .plate__caption > * {
+    opacity: 1;
+  }
+
+  .landing__burger-line {
+    transition: none;
+  }
+}
+
 /* ---- authenticated shell --------------------------------------------- */
 
 .shell {
@@ -293,6 +811,90 @@ code {
 
 .shell-nav--bottom {
   display: none;
+}
+
+/* The one nav item that still needs the customer (ADR-0006). */
+.shell-nav a[data-attention] {
+  color: var(--ink-strong);
+  padding-right: 1.5rem;
+  position: relative;
+}
+
+.shell-nav a[data-attention]::after {
+  background: var(--accent);
+  border-radius: 50%;
+  content: "";
+  height: 0.5rem;
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.5rem;
+}
+
+.visually-hidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+/* Shell-wide onboarding notice: the next step, in colour and in words. */
+.shell__notice {
+  align-items: center;
+  background: var(--accent-soft);
+  border-bottom: 1px solid color-mix(in oklch, var(--accent) 35%, var(--line));
+  color: var(--ink-strong);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  justify-content: space-between;
+  padding: 1rem clamp(1.25rem, 3vw, 3rem);
+}
+
+.shell__notice[data-tone="negative"] {
+  background: color-mix(in oklch, var(--negative) 10%, var(--surface-canvas));
+  border-bottom-color: color-mix(in oklch, var(--negative) 40%, var(--line));
+}
+
+.shell__notice-body {
+  display: grid;
+  gap: 0.25rem;
+  max-width: 62ch;
+}
+
+/* Title row: heading first, state pill beside it — no label above the heading. */
+.shell__notice-title {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.75rem;
+}
+
+/* On the tinted band the pill needs an opaque paper fill to keep its label above 4.5:1. */
+.shell__notice .status-pill {
+  background: var(--surface-canvas);
+  color: var(--ink-strong);
+}
+
+.shell__notice strong {
+  color: var(--ink-strong);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.shell__notice p {
+  color: var(--ink-default);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.shell__notice .button {
+  flex-shrink: 0;
 }
 
 /* ---- sections ----------------------------------------------------------- */
@@ -1101,7 +1703,104 @@ code {
   }
 
   .entry__facts {
+    gap: 1.5rem 1.5rem;
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .plate__model-head {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  /* Landing: section links and account actions fold into the corner menu. */
+  .landing__links,
+  .landing__auth {
+    display: none;
+  }
+
+  .landing__header {
+    gap: 1rem;
+    grid-template-columns: 1fr auto;
+  }
+
+  .landing__burger {
+    display: inline-flex;
+  }
+
+  .landing__menu:not([hidden]) {
+    animation: menu-rise var(--duration-base) var(--ease-enter);
+    background: var(--surface-canvas);
+    border-bottom: 1px solid var(--ink-strong);
+    box-shadow: var(--shadow-floating);
+    display: grid;
+    left: 0;
+    padding: 0.25rem clamp(1.25rem, 3vw, 3rem) 1rem;
+    position: absolute;
+    right: 0;
+    top: 100%;
+  }
+
+  .landing__menu a {
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-strong);
+    font-size: 1rem;
+    padding: 0.9rem 0;
+    text-decoration: none;
+  }
+
+  .landing__menu a:last-child {
+    border-bottom: 0;
+  }
+
+  .landing__menu .landing__menu-cta {
+    color: var(--accent-text);
+    font-weight: 560;
+  }
+
+  .landing__main .entry__grid {
+    min-height: 0;
+  }
+
+  .plate,
+  .plate[data-flip] {
+    gap: 1.75rem;
+    grid-template-columns: 1fr;
+    margin-top: 4rem;
+    padding-top: 1.75rem;
+    scroll-margin-top: 5rem;
+  }
+
+  .plate[data-flip] .plate__figure {
+    order: 0;
+  }
+
+  .plate__figure {
+    position: static;
+  }
+
+  .plate__frames {
+    aspect-ratio: 4 / 3;
+    max-height: 38vh;
+  }
+
+  .plate__compare {
+    grid-template-columns: 1fr;
+  }
+
+  .plate__compare-arrow {
+    transform: rotate(90deg);
+  }
+
+  .plate__providers > div {
+    grid-template-columns: 1fr;
+  }
+
+  .landing__footer {
+    grid-template-columns: 1fr;
+  }
+
+  .landing__footer nav {
+    justify-content: flex-start;
   }
 
   .shell {
@@ -1135,6 +1834,24 @@ code {
     padding: 0.5rem 0.4rem;
   }
 
+  .shell-nav--bottom a[data-attention] {
+    padding-right: 0.4rem;
+  }
+
+  .shell-nav--bottom a[data-attention]::after {
+    right: -0.25rem;
+    top: 0.35rem;
+    transform: none;
+  }
+
+  .shell__notice {
+    padding-block: 0.85rem;
+  }
+
+  .shell__notice .button {
+    width: 100%;
+  }
+
   .ops-shell {
     grid-template-columns: 1fr;
   }
@@ -1158,5 +1875,12 @@ code {
 
   .break-row {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* After the responsive block so it wins over the menu's entrance animation. */
+@media (prefers-reduced-motion: reduce) {
+  .landing__menu:not([hidden]) {
+    animation: none;
   }
 }

@@ -8,3 +8,4 @@ Chronological index. Entries are append-only; superseded decisions remain visibl
 - [0003 — Customer surface v1: sessions, funding, model investing, and the editorial orange design](decisions/0003-customer-surface-v1-sessions-funding-model-investing-and-the-editorial-orange-design.md)
 - [0004 — Valuation, returns and restatement](decisions/0004-valuation-returns-and-restatement.md)
 - [0005 — Reconciliation, approvals and the operator console](decisions/0005-reconciliation-approvals-and-the-operator-console.md)
+- [0006 — Self-serve registration, the public landing page, and onboarding prominence](decisions/0006-self-serve-registration-the-public-landing-page-and-onboarding-prominence.md)

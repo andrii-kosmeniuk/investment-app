@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState, ErrorState, InlineAlert, Money, PageHeading, Percentage, Summary, Units } from "@corgi/ui";
 import { RestatedPill } from "../../../components/PerformanceCard";
-import { ONBOARDING_STEP_HREF, ONBOARDING_STEP_LABEL, cents, percent, units, valueHeadline } from "../../../lib/copy";
+import { cents, percent, units, valueHeadline } from "../../../lib/copy";
+import { onboardingNotice } from "../../../lib/onboarding-notice";
 import { load, requireApi } from "../../../server/api";
 
 export const metadata: Metadata = { title: "Overview" };
@@ -28,7 +29,8 @@ export default async function OverviewPage() {
   const view = portfolio.data!;
   const rail = onboarding.data!;
   const kyc = rail.customer.kycStatus;
-  const nextStep = rail.steps.find((step) => step.status === "current" || step.status === "blocked");
+  /** The same next step the shell notice announces, so both actions always agree (ADR-0006). */
+  const nextStep = onboardingNotice(rail);
   const headline = valueHeadline(view.value);
   const pendingDeposits = cents(view.cash.pendingDepositCents);
   const hasAnything = view.positions.length > 0 || cents(view.cash.settledCents) > 0n || pendingDeposits > 0n;
@@ -38,23 +40,7 @@ export default async function OverviewPage() {
     <>
       <PageHeading eyebrow={`As of ${view.asOf}`} title={<>Good to see you, {rail.customer.displayName.split(" ")[0]}.</>} />
 
-      {kyc !== "approved" ? (
-        <InlineAlert
-          tone={kyc === "declined" ? "negative" : "warning"}
-          title={kyc === "declined" ? "We couldn't verify your identity" : "Identity verification is not complete"}
-          action={
-            kyc === "declined" ? null : (
-              <Link href="/onboarding" className="button" data-variant="secondary">
-                <span className="button__label">Continue</span>
-              </Link>
-            )
-          }
-        >
-          {kyc === "declined"
-            ? "Money cannot be added or invested. Contact support to review the decision."
-            : "Money cannot be added or invested until your identity check is approved."}
-        </InlineAlert>
-      ) : null}
+      {/* Identity gating is announced by the shell-wide onboarding notice (ADR-0006), not repeated here. */}
 
       {pendingDeposits > 0n ? (
         <InlineAlert tone="info" title="Deposit on its way">
@@ -120,9 +106,9 @@ export default async function OverviewPage() {
               : "Once your identity is verified you can link a bank and add money."
           }
           action={
-            nextStep ? (
-              <Link href={ONBOARDING_STEP_HREF[nextStep.key]} className="button" data-variant="primary">
-                <span className="button__label">{ONBOARDING_STEP_LABEL[nextStep.key]}</span>
+            nextStep?.action ? (
+              <Link href={nextStep.action.href} className="button" data-variant="primary">
+                <span className="button__label">{nextStep.action.label}</span>
               </Link>
             ) : null
           }
@@ -168,17 +154,7 @@ export default async function OverviewPage() {
         </section>
       )}
 
-      {nextStep && hasAnything ? (
-        <section className="section">
-          <div className="section__heading">
-            <h2>Next step</h2>
-          </div>
-          <p className="muted">
-            {nextStep.detail ?? ONBOARDING_STEP_LABEL[nextStep.key]}{" "}
-            <Link href={ONBOARDING_STEP_HREF[nextStep.key]}>{ONBOARDING_STEP_LABEL[nextStep.key]} →</Link>
-          </p>
-        </section>
-      ) : null}
+      {/* The remaining onboarding step is announced once, by the shell notice (ADR-0006). */}
     </>
   );
 }

@@ -195,6 +195,22 @@ export interface CredentialsRepository {
   findPasswordHash(customerId: string): Promise<string | null>;
 }
 
+export interface NewCustomer {
+  readonly id: string;
+  readonly email: string;
+  readonly displayName: string;
+  readonly passwordHash: string;
+}
+
+/**
+ * Self-serve registration (ADR-0006): creates the profile and its credential
+ * in one unit of work. Throws `EmailTakenError` when the email is already
+ * registered, relying on the database's uniqueness rather than a prior read.
+ */
+export interface CustomerRegistry {
+  create(customer: NewCustomer): Promise<CustomerProfile>;
+}
+
 export interface IdentityInquiryRecord {
   readonly inquiryId: string;
   readonly customerId: string;

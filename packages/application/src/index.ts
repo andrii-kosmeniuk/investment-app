@@ -20,6 +20,7 @@ export * from "./investing/apply-fill.js";
 export * from "./investing/choose-model.js";
 export * from "./auth/credentials.js";
 export * from "./auth/sign-in.js";
+export * from "./auth/sign-up.js";
 export * from "./customer/portfolio-view.js";
 export * from "./customer/performance-view.js";
 export * from "./customer/activity-view.js";

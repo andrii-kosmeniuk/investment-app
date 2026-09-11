@@ -29,6 +29,11 @@ export class ConfirmationRequiredError extends Error {
   }
 }
 
+/** Registration asked for an email that already belongs to a customer. */
+export class EmailTakenError extends Error {
+  override readonly name = "EmailTakenError";
+}
+
 /** The customer's current state forbids the action (e.g. KYC not approved). */
 export class NotPermittedError extends Error {
   override readonly name = "NotPermittedError";

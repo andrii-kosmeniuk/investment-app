@@ -8,6 +8,7 @@ import type {
   CredentialsRepository,
   CustodianFileRepository,
   CustomerDirectory,
+  CustomerRegistry,
   CustomerRepository,
   FundingPort,
   IdGenerator,
@@ -50,6 +51,7 @@ export interface CustomerServices {
   };
   readonly directory: CustomerDirectory;
   readonly credentials: CredentialsRepository;
+  readonly registry: CustomerRegistry;
   readonly customers: CustomerRepository;
   readonly inquiries: IdentityInquiryRepository;
   readonly bankAccounts: BankAccountRepository;

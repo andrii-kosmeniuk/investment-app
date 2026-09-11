@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-11T15:55:00+02:00",
+  "title": "Design System: Corgi Invest",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Corgi Orange",
+        "canonical": "#ff5c00",
+        "tonalRamp": ["oklch(0.15 0.06 40)", "oklch(0.26 0.1 40)", "oklch(0.37 0.14 40)", "oklch(0.48 0.18 40)", "oklch(0.6 0.2 40)", "oklch(0.7 0.19 40)", "oklch(0.84 0.1 40)", "oklch(0.95 0.03 40)"]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Corgi Orange · Pressed",
+        "canonical": "oklch(0.6 0.2 40)",
+        "tonalRamp": ["oklch(0.15 0.06 40)", "oklch(0.26 0.1 40)", "oklch(0.37 0.14 40)", "oklch(0.48 0.18 40)", "oklch(0.6 0.2 40)", "oklch(0.7 0.19 40)", "oklch(0.84 0.1 40)", "oklch(0.95 0.03 40)"]
+      },
+      "accent-text": {
+        "role": "primary",
+        "displayName": "Ink Orange",
+        "canonical": "oklch(0.55 0.19 40)",
+        "tonalRamp": ["oklch(0.15 0.06 40)", "oklch(0.26 0.1 40)", "oklch(0.37 0.14 40)", "oklch(0.48 0.18 40)", "oklch(0.55 0.19 40)", "oklch(0.7 0.19 40)", "oklch(0.84 0.1 40)", "oklch(0.95 0.03 40)"]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Orange Paper",
+        "canonical": "#ffdecc",
+        "tonalRamp": ["oklch(0.15 0.06 40)", "oklch(0.26 0.1 40)", "oklch(0.37 0.14 40)", "oklch(0.48 0.18 40)", "oklch(0.6 0.2 40)", "oklch(0.7 0.19 40)", "oklch(0.84 0.1 40)", "oklch(0.93 0.05 55)"]
+      },
+      "surface-canvas": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "oklch(0.975 0.01 90)",
+        "tonalRamp": ["oklch(0.15 0.012 90)", "oklch(0.26 0.012 90)", "oklch(0.37 0.012 90)", "oklch(0.48 0.012 90)", "oklch(0.6 0.012 90)", "oklch(0.72 0.012 90)", "oklch(0.86 0.012 90)", "oklch(0.975 0.01 90)"]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Raised Paper",
+        "canonical": "oklch(0.99 0.006 90)",
+        "tonalRamp": ["oklch(0.15 0.012 90)", "oklch(0.26 0.012 90)", "oklch(0.37 0.012 90)", "oklch(0.48 0.012 90)", "oklch(0.6 0.012 90)", "oklch(0.72 0.012 90)", "oklch(0.86 0.012 90)", "oklch(0.99 0.006 90)"]
+      },
+      "surface-subtle": {
+        "role": "neutral",
+        "displayName": "Pressed Paper",
+        "canonical": "oklch(0.955 0.012 90)",
+        "tonalRamp": ["oklch(0.15 0.012 90)", "oklch(0.26 0.012 90)", "oklch(0.37 0.012 90)", "oklch(0.48 0.012 90)", "oklch(0.6 0.012 90)", "oklch(0.72 0.012 90)", "oklch(0.86 0.012 90)", "oklch(0.955 0.012 90)"]
+      },
+      "ink-strong": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(0.22 0.012 90)",
+        "tonalRamp": ["oklch(0.15 0.012 90)", "oklch(0.22 0.012 90)", "oklch(0.37 0.012 90)", "oklch(0.48 0.012 90)", "oklch(0.6 0.012 90)", "oklch(0.72 0.012 90)", "oklch(0.86 0.012 90)", "oklch(0.95 0.012 90)"]
+      },
+      "ink-default": {
+        "role": "neutral",
+        "displayName": "Body Ink",
+        "canonical": "oklch(0.38 0.014 90)",
+        "tonalRamp": ["oklch(0.15 0.014 90)", "oklch(0.26 0.014 90)", "oklch(0.38 0.014 90)", "oklch(0.48 0.014 90)", "oklch(0.6 0.014 90)", "oklch(0.72 0.014 90)", "oklch(0.86 0.014 90)", "oklch(0.95 0.014 90)"]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Faded Ink",
+        "canonical": "oklch(0.55 0.014 90)",
+        "tonalRamp": ["oklch(0.15 0.014 90)", "oklch(0.26 0.014 90)", "oklch(0.37 0.014 90)", "oklch(0.48 0.014 90)", "oklch(0.55 0.014 90)", "oklch(0.72 0.014 90)", "oklch(0.86 0.014 90)", "oklch(0.95 0.014 90)"]
+      },
+      "ink-inverse": {
+        "role": "neutral",
+        "displayName": "Inverse Ink",
+        "canonical": "oklch(0.975 0.01 90)",
+        "tonalRamp": ["oklch(0.15 0.012 90)", "oklch(0.26 0.012 90)", "oklch(0.37 0.012 90)", "oklch(0.48 0.012 90)", "oklch(0.6 0.012 90)", "oklch(0.72 0.012 90)", "oklch(0.86 0.012 90)", "oklch(0.975 0.01 90)"]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(0.86 0.012 90)",
+        "tonalRamp": ["oklch(0.15 0.012 90)", "oklch(0.26 0.012 90)", "oklch(0.37 0.012 90)", "oklch(0.48 0.012 90)", "oklch(0.62 0.02 90)", "oklch(0.72 0.012 90)", "oklch(0.86 0.012 90)", "oklch(0.95 0.012 90)"]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Strong Hairline",
+        "canonical": "oklch(0.62 0.02 90)",
+        "tonalRamp": ["oklch(0.15 0.02 90)", "oklch(0.26 0.02 90)", "oklch(0.37 0.02 90)", "oklch(0.48 0.02 90)", "oklch(0.62 0.02 90)", "oklch(0.72 0.02 90)", "oklch(0.86 0.012 90)", "oklch(0.95 0.012 90)"]
+      },
+      "positive": {
+        "role": "tertiary",
+        "displayName": "Gain",
+        "canonical": "oklch(0.47 0.09 155)",
+        "tonalRamp": ["oklch(0.15 0.05 155)", "oklch(0.26 0.07 155)", "oklch(0.37 0.09 155)", "oklch(0.47 0.09 155)", "oklch(0.6 0.09 155)", "oklch(0.72 0.08 155)", "oklch(0.84 0.06 155)", "oklch(0.95 0.03 155)"]
+      },
+      "negative": {
+        "role": "tertiary",
+        "displayName": "Loss",
+        "canonical": "oklch(0.5 0.16 28)",
+        "tonalRamp": ["oklch(0.15 0.06 28)", "oklch(0.26 0.1 28)", "oklch(0.37 0.14 28)", "oklch(0.5 0.16 28)", "oklch(0.6 0.16 28)", "oklch(0.72 0.12 28)", "oklch(0.84 0.07 28)", "oklch(0.95 0.03 28)"]
+      },
+      "warning": {
+        "role": "tertiary",
+        "displayName": "Caution",
+        "canonical": "oklch(0.55 0.12 75)",
+        "tonalRamp": ["oklch(0.15 0.05 75)", "oklch(0.26 0.08 75)", "oklch(0.37 0.1 75)", "oklch(0.48 0.12 75)", "oklch(0.55 0.12 75)", "oklch(0.72 0.11 75)", "oklch(0.84 0.08 75)", "oklch(0.95 0.03 75)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Entrance headline on /, /sign-in, /sign-up and the landing closing statement. Instrument Serif appears nowhere else except the landing wordmark and the portfolio value." },
+      "display-value": { "displayName": "Display value", "purpose": "The portfolio's headline money figure on Overview and Portfolio." },
+      "headline": { "displayName": "Headline", "purpose": "Plate titles on the landing page (Inter 600); shell page titles share the clamp at weight 500." },
+      "title": { "displayName": "Title", "purpose": "Card, sheet and state headings; shell section headings drop to 1rem over an ink underline." },
+      "lead": { "displayName": "Lead", "purpose": "Hero lead and plate caption paragraphs, max 44ch." },
+      "body": { "displayName": "Body", "purpose": "Step details, provider rows, list rows, facts; UI chrome at 0.875rem." },
+      "label": { "displayName": "Label", "purpose": "Muted labels, table headers, hints, notes, status pills." },
+      "mono": { "displayName": "Mono numbering", "purpose": "Plate numerals, figcaptions, step counters, timeline markers, risk labels — only where sequence or identity carries meaning; in accent-text or ink-muted." }
+    },
+    "shadows": [
+      { "name": "shadow-floating", "value": "0 12px 36px oklch(0.2 0.02 90 / 0.14)", "purpose": "The confirm sheet panel and the mobile dropdown menu — the only elements that leave the page. Nothing at rest casts a shadow." },
+      { "name": "focus-halo", "value": "0 0 0 3px var(--accent-soft)", "purpose": "Field control on :focus-within, paired with an accent border." }
+    ],
+    "motion": [
+      { "name": "duration-fast", "value": "120ms", "purpose": "Colour, border and background state changes on buttons, links and fields." },
+      { "name": "duration-base", "value": "200ms", "purpose": "Menu button morph and mobile menu entrance." },
+      { "name": "duration-slow", "value": "320ms", "purpose": "Plate rule draw-in (steps(8, end)) and caption rise on first view." },
+      { "name": "ease-enter", "value": "cubic-bezier(0.2, 0.8, 0.2, 1)", "purpose": "The one entrance curve for every transition and rise." },
+      { "name": "ease-exit", "value": "cubic-bezier(0.4, 0, 1, 1)", "purpose": "Exit curve token; defined, unused in the current build." },
+      { "name": "plate-breathe", "value": "10s ease-in-out infinite", "purpose": "Cross-fade of the second dither frame over the first; texture drifts, nothing moves." },
+      { "name": "character-field-step", "value": "100ms", "purpose": "Frame interval of the canvas fern (~10fps) so the sway reads as stepped glyphs." },
+      { "name": "reduced-motion", "value": "animation: none; transition-duration: 0.01ms", "purpose": "Under prefers-reduced-motion every plate, fern, menu and rule animation is removed; the page is static and fully visible." }
+    ],
+    "breakpoints": [
+      { "name": "app", "value": "56rem", "purpose": "Single-column plates and grids, corner menu, bottom nav, static figure." },
+      { "name": "ui-primitives", "value": "48rem", "purpose": "@corgi/ui: summary grid to two columns, page heading stacks." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one solid orange on a screen; one per decision area.",
+      "html": "<button class=\"ds-btn ds-btn-primary\"><span class=\"ds-btn__label\">Create an account</span></button>",
+      "css": ".ds-btn { align-items: center; border: 1px solid transparent; border-radius: var(--radius-pill, 999px); cursor: pointer; display: inline-flex; font-family: var(--font-ui, Inter, sans-serif); font-size: 0.875rem; font-weight: 560; gap: 0.6rem; justify-content: center; line-height: 1; padding: 0.85rem 1.2rem; text-decoration: none; transition: background 120ms cubic-bezier(0.2, 0.8, 0.2, 1), color 120ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 120ms cubic-bezier(0.2, 0.8, 0.2, 1); } .ds-btn-primary { background: var(--accent, #ff5c00); color: #fff; } .ds-btn-primary:hover { background: var(--accent-hover, oklch(0.6 0.2 40)); } .ds-btn:focus-visible { outline: 2px solid var(--accent, #ff5c00); outline-offset: 3px; } .ds-btn:disabled { cursor: not-allowed; opacity: 0.55; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outlined pill for the alternative action; border darkens to ink on hover.",
+      "html": "<button class=\"ds-btn ds-btn-secondary\"><span class=\"ds-btn__label\">Sign in</span></button>",
+      "css": ".ds-btn { align-items: center; border: 1px solid transparent; border-radius: var(--radius-pill, 999px); cursor: pointer; display: inline-flex; font-family: var(--font-ui, Inter, sans-serif); font-size: 0.875rem; font-weight: 560; gap: 0.6rem; justify-content: center; line-height: 1; padding: 0.85rem 1.2rem; transition: border-color 120ms cubic-bezier(0.2, 0.8, 0.2, 1), color 120ms cubic-bezier(0.2, 0.8, 0.2, 1); } .ds-btn-secondary { background: transparent; border-color: var(--line-strong, oklch(0.62 0.02 90)); color: var(--ink-strong, oklch(0.22 0.012 90)); } .ds-btn-secondary:hover { border-color: var(--ink-strong, oklch(0.22 0.012 90)); } .ds-btn:focus-visible { outline: 2px solid var(--accent, #ff5c00); outline-offset: 3px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Bare orange-text action; underlines on hover.",
+      "html": "<button class=\"ds-btn ds-btn-ghost\"><span class=\"ds-btn__label\">Change model</span></button>",
+      "css": ".ds-btn { align-items: center; border: 1px solid transparent; border-radius: var(--radius-pill, 999px); cursor: pointer; display: inline-flex; font-family: var(--font-ui, Inter, sans-serif); font-size: 0.875rem; font-weight: 560; line-height: 1; padding: 0.85rem 0.5rem; } .ds-btn-ghost { background: transparent; color: var(--accent-text, oklch(0.55 0.19 40)); } .ds-btn-ghost:hover { text-decoration: underline; text-underline-offset: 0.3em; } .ds-btn:focus-visible { outline: 2px solid var(--accent, #ff5c00); outline-offset: 3px; }"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "status-pill",
+      "description": "Hairline pill for state; tones colour the label and border, info is the one filled tone.",
+      "html": "<span class=\"ds-pill\">Pending</span> <span class=\"ds-pill\" data-tone=\"positive\">Settled</span> <span class=\"ds-pill\" data-tone=\"warning\">Action needed</span> <span class=\"ds-pill\" data-tone=\"info\">Return updated</span>",
+      "css": ".ds-pill { border: 1px solid var(--line, oklch(0.86 0.012 90)); border-radius: var(--radius-pill, 999px); color: var(--ink-default, oklch(0.38 0.014 90)); display: inline-flex; font-family: var(--font-ui, Inter, sans-serif); font-size: 0.75rem; line-height: 1; padding: 0.375rem 0.6rem; white-space: nowrap; } .ds-pill[data-tone=\"positive\"] { border-color: color-mix(in oklch, var(--positive, oklch(0.47 0.09 155)) 40%, var(--line, oklch(0.86 0.012 90))); color: var(--positive, oklch(0.47 0.09 155)); } .ds-pill[data-tone=\"negative\"] { border-color: color-mix(in oklch, var(--negative, oklch(0.5 0.16 28)) 40%, var(--line, oklch(0.86 0.012 90))); color: var(--negative, oklch(0.5 0.16 28)); } .ds-pill[data-tone=\"warning\"] { border-color: color-mix(in oklch, var(--warning, oklch(0.55 0.12 75)) 40%, var(--line, oklch(0.86 0.012 90))); color: var(--warning, oklch(0.55 0.12 75)); } .ds-pill[data-tone=\"info\"] { background: var(--accent-soft, #ffdecc); border-color: transparent; color: var(--accent-text, oklch(0.55 0.19 40)); }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field-control",
+      "description": "Label over a raised-paper control with a strong hairline; focus turns the border orange with a soft halo.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field__label\" for=\"ds-amount\">Amount</label><div class=\"ds-field__control\"><span class=\"ds-field__prefix\">$</span><input id=\"ds-amount\" inputmode=\"decimal\" placeholder=\"500.00\" /></div><p class=\"ds-field__hint\">Up to $50,000 per deposit.</p></div>",
+      "css": ".ds-field { display: grid; gap: 0.45rem; font-family: var(--font-ui, Inter, sans-serif); } .ds-field__label { color: var(--ink-strong, oklch(0.22 0.012 90)); font-size: 0.8125rem; font-weight: 520; } .ds-field__control { align-items: center; background: var(--surface-raised, oklch(0.99 0.006 90)); border: 1px solid var(--line-strong, oklch(0.62 0.02 90)); border-radius: var(--radius-md, 4px); display: flex; transition: border-color 120ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 120ms cubic-bezier(0.2, 0.8, 0.2, 1); } .ds-field__control:focus-within { border-color: var(--accent, #ff5c00); box-shadow: 0 0 0 3px var(--accent-soft, #ffdecc); } .ds-field__control input { background: transparent; border: 0; color: var(--ink-strong, oklch(0.22 0.012 90)); flex: 1; font: inherit; font-size: 0.9375rem; font-variant-numeric: tabular-nums; min-width: 0; outline: none; padding: 0.8rem 0.9rem 0.8rem 0.3rem; } .ds-field__prefix { color: var(--ink-muted, oklch(0.55 0.014 90)); padding-inline-start: 0.9rem; } .ds-field__hint { color: var(--ink-muted, oklch(0.55 0.014 90)); font-size: 0.75rem; line-height: 1.5; margin: 0; }"
+    },
+    {
+      "name": "Landing Header",
+      "kind": "nav",
+      "refersTo": "nav-link-active",
+      "description": "Sticky paper header: serif wordmark, centred section links with a hover underline rule, text link plus hairline sign-in pill.",
+      "html": "<header class=\"ds-landing-header\"><a class=\"ds-brand\" href=\"#\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 4 4\" aria-hidden=\"true\" shape-rendering=\"crispEdges\"><rect x=\"0\" y=\"1\" width=\"1\" height=\"1\"/><rect x=\"1\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"1\" y=\"1\" width=\"2\" height=\"2\"/><rect x=\"3\" y=\"1\" width=\"1\" height=\"1\"/><rect x=\"0\" y=\"3\" width=\"1\" height=\"1\"/><rect x=\"3\" y=\"3\" width=\"1\" height=\"1\"/></svg>Corgi Invest</a><nav class=\"ds-landing-links\"><a href=\"#\">How it works</a><a href=\"#\">Models</a><a href=\"#\">Restatements</a><a href=\"#\">Sandbox</a></nav><div class=\"ds-landing-auth\"><a class=\"ds-landing-auth__link\" href=\"#\">Create an account</a><a class=\"ds-landing-auth__pill\" href=\"#\">Sign in</a></div></header>",
+      "css": ".ds-landing-header { align-items: center; background: var(--surface-canvas, oklch(0.975 0.01 90)); border-bottom: 1px solid var(--line, oklch(0.86 0.012 90)); display: grid; font-family: var(--font-ui, Inter, sans-serif); gap: 1.5rem; grid-template-columns: auto 1fr auto; min-height: 4.5rem; padding: 0 1.5rem; } .ds-brand { align-items: center; color: var(--ink-strong, oklch(0.22 0.012 90)); display: inline-flex; font-family: var(--font-display, 'Instrument Serif', serif); font-size: 1.375rem; gap: 0.55rem; text-decoration: none; } .ds-brand svg { fill: var(--accent, #ff5c00); } .ds-landing-links { display: flex; gap: 2rem; justify-content: center; } .ds-landing-links a, .ds-landing-auth__link { border-bottom: 1px solid transparent; color: var(--ink-default, oklch(0.38 0.014 90)); font-size: 0.875rem; padding: 0.25rem 0; text-decoration: none; transition: color 120ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 120ms cubic-bezier(0.2, 0.8, 0.2, 1); } .ds-landing-links a:hover, .ds-landing-auth__link:hover { border-bottom-color: var(--ink-strong, oklch(0.22 0.012 90)); color: var(--ink-strong, oklch(0.22 0.012 90)); } .ds-landing-auth { align-items: center; display: flex; gap: 0.75rem; } .ds-landing-auth__pill { border: 1px solid var(--line-strong, oklch(0.62 0.02 90)); border-radius: var(--radius-pill, 999px); color: var(--ink-default, oklch(0.38 0.014 90)); font-size: 0.875rem; padding: 0.5rem 0.9rem; text-decoration: none; } .ds-landing-auth__pill:hover { border-color: var(--ink-strong, oklch(0.22 0.012 90)); color: var(--ink-strong, oklch(0.22 0.012 90)); } .ds-landing-header a:focus-visible { outline: 2px solid var(--accent, #ff5c00); outline-offset: 3px; }"
+    },
+    {
+      "name": "Shell Side Nav",
+      "kind": "nav",
+      "refersTo": "nav-link-active",
+      "description": "Faded-ink links; the current page sits on pressed paper; an item needing attention carries an orange dot.",
+      "html": "<nav class=\"ds-shell-nav\"><a href=\"#\" aria-current=\"page\">Overview</a><a href=\"#\">Portfolio</a><a href=\"#\">Transfers</a><a href=\"#\" data-attention>Onboarding<span class=\"ds-visually-hidden\"> (action needed)</span></a><a href=\"#\">Activity</a></nav>",
+      "css": ".ds-shell-nav { display: flex; flex-direction: column; font-family: var(--font-ui, Inter, sans-serif); gap: 0.15rem; width: 12.5rem; } .ds-shell-nav a { border-radius: var(--radius-sm, 2px); color: var(--ink-muted, oklch(0.55 0.014 90)); display: block; font-size: 0.875rem; padding: 0.6rem 0.75rem; position: relative; text-decoration: none; } .ds-shell-nav a:hover { color: var(--ink-strong, oklch(0.22 0.012 90)); } .ds-shell-nav a[aria-current=\"page\"] { background: var(--surface-subtle, oklch(0.955 0.012 90)); color: var(--ink-strong, oklch(0.22 0.012 90)); } .ds-shell-nav a[data-attention] { color: var(--ink-strong, oklch(0.22 0.012 90)); padding-right: 1.5rem; } .ds-shell-nav a[data-attention]::after { background: var(--accent, #ff5c00); border-radius: 50%; content: ''; height: 0.5rem; position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 0.5rem; } .ds-shell-nav a:focus-visible { outline: 2px solid var(--accent, #ff5c00); outline-offset: 3px; } .ds-visually-hidden { clip: rect(0 0 0 0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }"
+    },
+    {
+      "name": "Model Card",
+      "kind": "card",
+      "refersTo": "model-card",
+      "description": "Raised-paper card with a hairline; the current model's border is ink. Mono risk label, Inter title, allocation bar, one button.",
+      "html": "<article class=\"ds-model-card\" data-current><div class=\"ds-model-card__head\"><span class=\"ds-model-card__risk\">Balanced · risk 2/5</span><h3>Balanced</h3></div><div class=\"ds-allocation\"><div class=\"ds-allocation__bar\" role=\"img\" aria-label=\"VTI 45%, VXUS 15%, BND 40%\"><span style=\"flex-grow:4500\" data-index=\"0\"></span><span style=\"flex-grow:1500\" data-index=\"1\"></span><span style=\"flex-grow:4000\" data-index=\"2\"></span></div><ul class=\"ds-allocation__legend\"><li><span class=\"ds-allocation__swatch\" data-index=\"0\"></span><span class=\"ds-allocation__symbol\">VTI</span><span>45%</span></li><li><span class=\"ds-allocation__swatch\" data-index=\"1\"></span><span class=\"ds-allocation__symbol\">VXUS</span><span>15%</span></li><li><span class=\"ds-allocation__swatch\" data-index=\"2\"></span><span class=\"ds-allocation__symbol\">BND</span><span>40%</span></li></ul></div><button class=\"ds-btn ds-btn-secondary\">Current model</button></article>",
+      "css": ".ds-model-card { background: var(--surface-raised, oklch(0.99 0.006 90)); border: 1px solid var(--line, oklch(0.86 0.012 90)); border-radius: var(--radius-md, 4px); color: var(--ink-default, oklch(0.38 0.014 90)); display: grid; font-family: var(--font-ui, Inter, sans-serif); gap: 1rem; max-width: 22rem; padding: 1.25rem; } .ds-model-card[data-current] { border-color: var(--ink-strong, oklch(0.22 0.012 90)); } .ds-model-card__head { display: grid; gap: 0.35rem; } .ds-model-card__risk { color: var(--accent-text, oklch(0.55 0.19 40)); font-family: var(--font-code, 'Geist Mono', monospace); font-size: 0.75rem; } .ds-model-card h3 { color: var(--ink-strong, oklch(0.22 0.012 90)); font-size: 1.125rem; font-weight: 520; margin: 0; } .ds-allocation { display: grid; gap: 0.9rem; } .ds-allocation__bar { border-radius: var(--radius-sm, 2px); display: flex; gap: 2px; height: 0.5rem; overflow: hidden; } .ds-allocation__bar span, .ds-allocation__swatch { background: var(--accent, #ff5c00); } .ds-allocation__bar span[data-index=\"1\"], .ds-allocation__swatch[data-index=\"1\"] { background: color-mix(in oklch, var(--accent, #ff5c00) 62%, var(--surface-canvas, oklch(0.975 0.01 90))); } .ds-allocation__bar span[data-index=\"2\"], .ds-allocation__swatch[data-index=\"2\"] { background: color-mix(in oklch, var(--accent, #ff5c00) 34%, var(--surface-canvas, oklch(0.975 0.01 90))); } .ds-allocation__bar span[data-index=\"3\"], .ds-allocation__swatch[data-index=\"3\"] { background: var(--ink-strong, oklch(0.22 0.012 90)); } .ds-allocation__legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; list-style: none; margin: 0; padding: 0; } .ds-allocation__legend li { align-items: center; display: flex; font-size: 0.8125rem; font-variant-numeric: tabular-nums; gap: 0.5rem; } .ds-allocation__swatch { border-radius: 1px; display: inline-block; height: 0.6rem; width: 0.6rem; } .ds-allocation__symbol { color: var(--ink-strong, oklch(0.22 0.012 90)); font-weight: 520; } .ds-btn { align-items: center; border: 1px solid transparent; border-radius: var(--radius-pill, 999px); cursor: pointer; display: inline-flex; font: inherit; font-size: 0.875rem; font-weight: 560; justify-self: start; line-height: 1; padding: 0.85rem 1.2rem; } .ds-btn-secondary { background: transparent; border-color: var(--line-strong, oklch(0.62 0.02 90)); color: var(--ink-strong, oklch(0.22 0.012 90)); } .ds-btn-secondary:hover { border-color: var(--ink-strong, oklch(0.22 0.012 90)); }"
+    },
+    {
+      "name": "Restatement Compare Block",
+      "kind": "card",
+      "refersTo": "compare-block",
+      "description": "The one card on the landing page: as-published and as-corrected figures across a muted arrow, with the info pill and the reason.",
+      "html": "<div class=\"ds-compare\" role=\"group\" aria-label=\"Illustration of a restated return\"><div><span class=\"ds-compare__label\">As published · Sep 8</span><span class=\"ds-compare__value\">+3.41%</span></div><span class=\"ds-compare__arrow\" aria-hidden=\"true\">→</span><div><span class=\"ds-compare__label\">As corrected · Sep 10</span><span class=\"ds-compare__value\">+3.52%</span><span class=\"ds-pill\" data-tone=\"info\">Return updated</span><span class=\"ds-compare__reason\">Late dividend, effective Sep 5</span></div></div>",
+      "css": ".ds-compare { align-items: center; border: 1px solid var(--line, oklch(0.86 0.012 90)); border-radius: var(--radius-lg, 6px); display: grid; font-family: var(--font-ui, Inter, sans-serif); gap: 1rem 1.5rem; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); max-width: 36rem; padding: 1.25rem 1.5rem; } .ds-compare > div { display: grid; gap: 0.35rem; justify-items: start; } .ds-compare__label { color: var(--ink-muted, oklch(0.55 0.014 90)); font-size: 0.75rem; } .ds-compare__value { color: var(--ink-strong, oklch(0.22 0.012 90)); font-size: 2rem; font-variant-numeric: tabular-nums; font-weight: 500; letter-spacing: -0.02em; line-height: 1; } .ds-compare__arrow { color: var(--ink-muted, oklch(0.55 0.014 90)); font-size: 1.25rem; } .ds-compare__reason { color: var(--ink-default, oklch(0.38 0.014 90)); font-size: 0.8125rem; } .ds-pill { border: 1px solid transparent; border-radius: var(--radius-pill, 999px); display: inline-flex; font-size: 0.75rem; line-height: 1; padding: 0.375rem 0.6rem; white-space: nowrap; } .ds-pill[data-tone=\"info\"] { background: var(--accent-soft, #ffdecc); color: var(--accent-text, oklch(0.55 0.19 40)); }"
+    },
+    {
+      "name": "Onboarding Notice",
+      "kind": "custom",
+      "refersTo": "onboarding-notice",
+      "description": "Shell-wide band on the one tinted surface: heading with a paper-filled status pill beside it, one sentence, one button.",
+      "html": "<aside class=\"ds-notice\" aria-label=\"Onboarding\"><div class=\"ds-notice__body\"><p class=\"ds-notice__title\"><strong>Verify your identity</strong><span class=\"ds-pill\" data-tone=\"warning\">Action needed</span></p><p>Deposits and investing are unavailable until Persona confirms who you are. Step 2 of 5.</p></div><a class=\"ds-btn ds-btn-primary\" href=\"#\">Start verification</a></aside>",
+      "css": ".ds-notice { align-items: center; background: var(--accent-soft, #ffdecc); border-bottom: 1px solid color-mix(in oklch, var(--accent, #ff5c00) 35%, var(--line, oklch(0.86 0.012 90))); color: var(--ink-strong, oklch(0.22 0.012 90)); display: flex; flex-wrap: wrap; font-family: var(--font-ui, Inter, sans-serif); gap: 1rem 2rem; justify-content: space-between; padding: 1rem 1.5rem; } .ds-notice__body { display: grid; gap: 0.25rem; max-width: 62ch; } .ds-notice__title { align-items: center; display: flex; flex-wrap: wrap; gap: 0.375rem 0.75rem; margin: 0; } .ds-notice strong { font-size: 1rem; font-weight: 600; } .ds-notice p { color: var(--ink-default, oklch(0.38 0.014 90)); font-size: 0.875rem; line-height: 1.5; margin: 0; } .ds-pill { background: var(--surface-canvas, oklch(0.975 0.01 90)); border: 1px solid color-mix(in oklch, var(--warning, oklch(0.55 0.12 75)) 40%, var(--line, oklch(0.86 0.012 90))); border-radius: var(--radius-pill, 999px); color: var(--ink-strong, oklch(0.22 0.012 90)); display: inline-flex; font-size: 0.75rem; line-height: 1; padding: 0.375rem 0.6rem; white-space: nowrap; } .ds-btn { align-items: center; border: 1px solid transparent; border-radius: var(--radius-pill, 999px); display: inline-flex; flex-shrink: 0; font-size: 0.875rem; font-weight: 560; line-height: 1; padding: 0.85rem 1.2rem; text-decoration: none; transition: background 120ms cubic-bezier(0.2, 0.8, 0.2, 1); } .ds-btn-primary { background: var(--accent, #ff5c00); color: #fff; } .ds-btn-primary:hover { background: var(--accent-hover, oklch(0.6 0.2 40)); } .ds-btn:focus-visible { outline: 2px solid var(--accent, #ff5c00); outline-offset: 3px; }"
+    },
+    {
+      "name": "Plate Caption Frame",
+      "kind": "custom",
+      "refersTo": "compare-block",
+      "description": "Field-guide plate scaffold: ink rule, 3:4 figure well on paper, mono figcaption in accent-text, Inter 600 title and lead caption. Frames ship as pre-dithered PNG pairs composited with multiply; the panel shows the scaffold with a placeholder well.",
+      "html": "<section class=\"ds-plate\"><div class=\"ds-plate__rule\" aria-hidden=\"true\"></div><figure class=\"ds-plate__figure\"><div class=\"ds-plate__frames\"></div><figcaption>Plate I · river stones</figcaption></figure><div class=\"ds-plate__caption\"><h2>Five steps, in order.</h2><p>Each step is confirmed by the provider or by the ledger — never by a redirect.</p><ol class=\"ds-plate__steps\"><li><strong>Create an account</strong><span>Your name, an email and a password.</span></li><li><strong>Verify your identity</strong><span>Persona checks who you are.</span></li></ol></div></section>",
+      "css": ".ds-plate { display: grid; font-family: var(--font-ui, Inter, sans-serif); gap: 2rem; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); max-width: 44rem; padding-top: 2.5rem; position: relative; } .ds-plate__rule { background: var(--ink-strong, oklch(0.22 0.012 90)); height: 1px; left: 0; position: absolute; right: 0; top: 0; transform-origin: left; animation: ds-plate-rule 320ms steps(8, end) both; } .ds-plate__figure { display: grid; gap: 0.75rem; margin: 0; } .ds-plate__frames { aspect-ratio: 3 / 4; background: var(--surface-canvas, oklch(0.975 0.01 90)); outline: 1px solid var(--line, oklch(0.86 0.012 90)); } .ds-plate__figure figcaption { color: var(--accent-text, oklch(0.55 0.19 40)); font-family: var(--font-code, 'Geist Mono', monospace); font-size: 0.75rem; letter-spacing: 0.04em; } .ds-plate__caption { align-self: center; display: grid; gap: 1.25rem; } .ds-plate__caption > * { animation: ds-plate-rise 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; } .ds-plate__caption > :nth-child(2) { animation-delay: 60ms; } .ds-plate__caption > :nth-child(n + 3) { animation-delay: 120ms; } .ds-plate__caption h2 { color: var(--ink-strong, oklch(0.22 0.012 90)); font-size: clamp(1.75rem, 3vw, 2.375rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; margin: 0; text-wrap: balance; } .ds-plate__caption p { color: var(--ink-default, oklch(0.38 0.014 90)); font-size: 1.0625rem; line-height: 1.55; margin: 0; } .ds-plate__steps { border-top: 1px solid var(--line, oklch(0.86 0.012 90)); counter-reset: step; list-style: none; margin: 0; padding: 0; } .ds-plate__steps li { border-bottom: 1px solid var(--line, oklch(0.86 0.012 90)); counter-increment: step; display: grid; gap: 0.15rem 1rem; grid-template-columns: 2rem minmax(0, 1fr); padding: 0.85rem 0; } .ds-plate__steps li::before { color: var(--accent-text, oklch(0.55 0.19 40)); content: counter(step, decimal-leading-zero); font-family: var(--font-code, 'Geist Mono', monospace); font-size: 0.75rem; grid-row: 1 / span 2; padding-top: 0.25rem; } .ds-plate__steps strong { color: var(--ink-strong, oklch(0.22 0.012 90)); font-weight: 560; } .ds-plate__steps span { color: var(--ink-default, oklch(0.38 0.014 90)); font-size: 0.9375rem; line-height: 1.5; } @keyframes ds-plate-rule { from { transform: scaleX(0); } to { transform: scaleX(1); } } @keyframes ds-plate-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } } @media (prefers-reduced-motion: reduce) { .ds-plate__rule, .ds-plate__caption > * { animation: none; } }"
+    },
+    {
+      "name": "Environment Badge",
+      "kind": "chip",
+      "refersTo": "environment-badge",
+      "description": "Mono uppercase sandbox marker on orange paper; renders only outside production.",
+      "html": "<span class=\"ds-env\" title=\"Sandbox rails: no real money moves\">Sandbox</span>",
+      "css": ".ds-env { background: var(--accent-soft, #ffdecc); border-radius: var(--radius-sm, 2px); color: var(--accent-text, oklch(0.55 0.19 40)); font-family: var(--font-code, 'Geist Mono', monospace); font-size: 0.6875rem; letter-spacing: 0.06em; padding: 0.3rem 0.5rem; text-transform: uppercase; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Botanical Field Guide",
+    "overview": "Corgi Invest is set like a printed field guide to a single natural process. The canvas is warm paper (oklch hue 90, barely tinted), the type is near-black ink, and every division on the page is a hairline rule rather than a box. Content is arranged as numbered plates: a monochrome figure on one side, a short factual caption on the other, the two separated by nothing more than white space and a rule that spans the page. Inside the signed-in shell the same paper, ink and rules carry money tables, a status rail and one tinted band; nothing in the product is glossy, layered or gradient-lit.\n\nOne colour is allowed to be loud. Corgi's brand orange (`accent`, #ff5c00) appears as a mark — the emblem, the primary pill, the allocation bar's first segment, the onboarding dot, the current step of the timeline, focus rings — and never as running text. When orange has to be read, it darkens to `accent-text` so it clears 4.5:1 on paper. The only tinted surface in the system is `accent-soft`, reserved for the onboarding band, the info pill, the sandbox badge and text selection. Everything else is paper against ink.\n\nType follows the same restraint. Instrument Serif is an event: the entrance headline, the serif wordmark on the landing header, the closing statement, and the portfolio's headline value. Inter carries every other word at weights between 400 and 650. Geist Mono is reserved for numbering and identifiers — plate numerals, step counters, figcaptions, risk labels, the environment badge — and is coloured `accent-text` or `ink-muted`, never `ink-strong`. Artwork comes from exactly two families: ordered-dithered monochrome nature photographs (river stones, raked garden, cloud bank, hills in mist) that \"breathe\" by cross-fading two dither frames, and the character-field fern drawn live on a canvas in monospace glyphs. Motion is small, stepped and short (120/200/320 ms, one enter curve), and the whole world stands still under `prefers-reduced-motion`.",
+    "keyCharacteristics": [
+      "Warm paper canvas, near-black ink, one orange: marks in `accent`, words in `accent-text`, one tinted surface in `accent-soft`.",
+      "Depth by hairline rules and tonal paper steps; a single floating shadow exists for the confirm sheet and the mobile menu only.",
+      "Instrument Serif only on the entrance headline, landing wordmark, closing statement and portfolio value; Inter everywhere else; Geist Mono for numbering.",
+      "Square-ish radii (2/4/6 px); pills only for buttons, status chips, the sign-in pill and the menu button.",
+      "Two artwork families — dithered monochrome nature plates and the character-field fern — and no other imagery, icons or gradients.",
+      "Stepped, brief motion (rule draws in 8 steps, glyph fern at ~10 fps, plates breathe over 10 s); fully static under reduced motion."
+    ],
+    "rules": [
+      { "name": "The One Orange Rule", "body": "`accent` is a mark, never a word: fills, bars, dots, rules and focus only. Text that must be orange uses `accent-text`. `accent-soft` is the one tinted surface; no other colour may tint a background except the negative onboarding band.", "section": "colors" },
+      { "name": "The Same-Hue Rule", "body": "Every neutral — three papers, three inks, two hairlines — sits on oklch hue 90 with chroma ≤ 0.02. Depth is lightness, never a different hue.", "section": "colors" },
+      { "name": "The Serif Is An Event Rule", "body": "Instrument Serif appears in exactly four places: the entrance headline, the landing wordmark, the closing statement, and the portfolio's headline value. Plate titles, page titles and every heading inside the shell are Inter.", "section": "typography" },
+      { "name": "The Numbering Earns Its Place Rule", "body": "Geist Mono numerals appear only where sequence carries meaning — plates I–IV, onboarding steps 01–05, the four hero facts, timeline markers. Decorative numbering and letter-spaced mono labels above headings are not part of the system.", "section": "typography" },
+      { "name": "The Tabular Rule", "body": "Every money value, unit, percentage and date column is set tabular and right-aligned in tables; signed percentages carry their sign as a glyph (`+`, `−`) and their colour from `positive`/`negative`.", "section": "typography" },
+      { "name": "The Hairline Rule", "body": "Structure is drawn with 1px rules, not boxes. A card border is the exception, not the default; lists, tables, steps and providers are separated by hairlines with no background.", "section": "elevation" },
+      { "name": "The Two Floaters Rule", "body": "Only elements that float over the page — the confirm sheet and the mobile menu — cast `--shadow-floating`. No hover lift, no ambient card shadows, no glass or backdrop blur.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do draw structure with 1px rules — `ink-strong` for major divisions (hero, plates, closing statement, section headings) and `line` for rows, lists and containers — and let them span the page while the text measure stays narrow.",
+      "Do keep `accent` (#ff5c00) to marks: fills, bars, dots, rules, focus. Use `accent-text` for any orange word and `accent-soft` for the one permitted tint.",
+      "Do reserve Instrument Serif 400 for the entrance headline, the landing wordmark, the closing statement and the portfolio's headline value; set every other heading in Inter (600 for plate titles, 500–520 elsewhere).",
+      "Do number with Geist Mono 0.75rem in `accent-text` only where sequence carries meaning (plates I–IV, steps 01–05, facts, timeline markers).",
+      "Do use the token durations — 120ms for state, 200ms for menus, 320ms for entrances — with `cubic-bezier(0.2, 0.8, 0.2, 1)`, and make every animation `none` under `prefers-reduced-motion: reduce`.",
+      "Do make artwork from the two families only: ordered-dithered monochrome nature photographs shipped as `-a`/`-b` frame pairs composited with `multiply`, or the character-field fern; embed provenance in every raster's `tEXt` chunk.",
+      "Do put one primary pill per decision area and let the alternative be a text link or a `line-strong` pill.",
+      "Do set all numbers tabular, right-align money columns, and colour signed values only with `positive`/`negative`."
+    ],
+    "donts": [
+      "Don't use gradients, glass, backdrop blur, hover lifts or resting shadows; `--shadow-floating` belongs to the confirm sheet and the mobile menu alone.",
+      "Don't set orange text in `accent` or tint any surface other than with `accent-soft` (or `negative` at 10% for the negative onboarding band).",
+      "Don't add glyph icons, icon cards, three-up feature grids, hero metrics or testimonial blocks; the landing page is plates and captions.",
+      "Don't put a label, kicker or eyebrow above a heading; headings lead, and status sits beside them as a pill.",
+      "Don't round corners beyond 6px except on buttons, status pills and the two header pills; don't use thick one-sided \"side-tab\" borders to mark tone — use the 0.5rem leading dot.",
+      "Don't introduce a second hue for neutrals; every paper, ink and hairline stays on oklch hue 90.",
+      "Don't render dithered artwork at runtime or at 1× cell size; ship pre-dithered frames doubled with nearest-neighbour."
+    ]
+  }
+}

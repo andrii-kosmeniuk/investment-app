@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { Button, Field, InlineAlert } from "@corgi/ui";
 import { type ActionResult, signInAction } from "../server/actions";
@@ -34,6 +35,9 @@ export function SignInForm({ expired }: { readonly expired: boolean }) {
       <Button type="submit" pending={pending}>
         Sign in
       </Button>
+      <p className="signin-form__switch">
+        New to Corgi Invest? <Link href="/sign-up">Create an account</Link>
+      </p>
     </form>
   );
 }

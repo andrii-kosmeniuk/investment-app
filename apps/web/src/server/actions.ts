@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { type SignUpFields, type SignUpProblem, readSignUpForm, signUpFailure, validateSignUp } from "../lib/sign-up";
 import { ApiClientError } from "./api-client";
 import { anonymousApi, requireApi } from "./api";
 import { clearSessionCookie, writeSessionCookie } from "./session";
@@ -33,6 +34,26 @@ export async function signInAction(_previous: ActionResult | null, formData: For
     return fail(error);
   }
   redirect("/overview");
+}
+
+/** What the customer typed survives a failed attempt (design brief §8, Field). */
+export interface SignUpResult {
+  readonly problem: SignUpProblem;
+  readonly fields: SignUpFields;
+}
+
+export async function signUpAction(_previous: SignUpResult | null, formData: FormData): Promise<SignUpResult> {
+  const { password, ...fields } = readSignUpForm(formData);
+  const problem = validateSignUp({ ...fields, password });
+  if (problem) return { problem, fields };
+  try {
+    const session = await anonymousApi().signUp({ ...fields, password });
+    await writeSessionCookie(session.token, new Date(session.expiresAt));
+  } catch (error) {
+    const failure = error instanceof ApiClientError ? signUpFailure(error.code, error.message) : signUpFailure("unknown", "");
+    return { problem: failure, fields };
+  }
+  redirect("/onboarding");
 }
 
 export async function signOutAction(): Promise<void> {

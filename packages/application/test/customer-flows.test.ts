@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ConfirmationRequiredError,
+  EmailTakenError,
   NotFoundError,
   NotPermittedError,
   ValidationError,
@@ -11,6 +12,7 @@ import {
   linkBankAccount,
   placeOrder,
   signIn,
+  signUp,
   startVerification,
   verifyPassword,
 } from "../src/index.js";
@@ -26,6 +28,7 @@ import {
   FakeBankAccounts,
   FakeCredentials,
   FakeCustomerDirectory,
+  FakeCustomerRegistry,
   FakeFunding,
   FakeIdentity,
   FakeInquiries,
@@ -90,6 +93,50 @@ describe("sign-in", () => {
     };
     await signIn({ directory, credentials: new FakeCredentials({}), verify }, { email: "nobody@x.io", password: "p" });
     expect(calls).toBe(1);
+  });
+});
+
+describe("sign-up (ADR-0006)", () => {
+  const command = { email: " Ada@Example.com ", password: "long-enough-password", displayName: "  Ada   Lovelace " };
+
+  it("normalises the input, hashes the password once, and registers a not-yet-verified customer", async () => {
+    const registry = new FakeCustomerRegistry();
+    const profile = await signUp(
+      { directory: new FakeCustomerDirectory([olivia]), registry, ids: sequentialIds("cust") },
+      command,
+    );
+    expect(profile).toEqual({
+      id: "cust-1",
+      email: "ada@example.com",
+      displayName: "Ada Lovelace",
+      kycStatus: "not_started",
+      tradingBlocked: true,
+    });
+    expect(registry.created).toHaveLength(1);
+    await expect(verifyPassword("long-enough-password", registry.created[0]!.passwordHash)).resolves.toBe(true);
+  });
+
+  it("refuses an email that already exists before hashing anything", async () => {
+    const registry = new FakeCustomerRegistry();
+    let hashed = 0;
+    const hash = (password: string) => {
+      hashed += 1;
+      return hashPassword(password);
+    };
+    await expect(
+      signUp(
+        { directory: new FakeCustomerDirectory([olivia]), registry, ids: sequentialIds("cust"), hash },
+        { ...command, email: "OLIVIA@demo.corgi" },
+      ),
+    ).rejects.toBeInstanceOf(EmailTakenError);
+    expect(hashed).toBe(0);
+    expect(registry.created).toHaveLength(0);
+  });
+
+  it("rejects short passwords and blank names as validation errors", async () => {
+    const deps = { directory: new FakeCustomerDirectory([]), registry: new FakeCustomerRegistry(), ids: sequentialIds("cust") };
+    await expect(signUp(deps, { ...command, password: "short" })).rejects.toBeInstanceOf(ValidationError);
+    await expect(signUp(deps, { ...command, displayName: " x " })).rejects.toBeInstanceOf(ValidationError);
   });
 });
 

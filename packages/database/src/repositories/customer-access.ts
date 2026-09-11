@@ -1,10 +1,13 @@
-import type {
-  CredentialsRepository,
-  CustomerDirectory,
-  CustomerProfile,
-  IdentityInquiryRecord,
-  IdentityInquiryRepository,
-  KycStatus,
+import {
+  type CredentialsRepository,
+  type CustomerDirectory,
+  type CustomerProfile,
+  type CustomerRegistry,
+  EmailTakenError,
+  type IdentityInquiryRecord,
+  type IdentityInquiryRepository,
+  type KycStatus,
+  type NewCustomer,
 } from "@corgi/application";
 import { desc, eq } from "drizzle-orm";
 import type { TransactionalDatabase } from "../pool.js";
@@ -62,6 +65,50 @@ export class DrizzleCredentialsRepository implements CredentialsRepository {
         target: customerCredentials.customerId,
         set: { passwordHash, updatedAt: new Date() },
       });
+  }
+}
+
+const UNIQUE_VIOLATION = "23505";
+
+function isUniqueViolation(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; current && typeof current === "object" && depth < 4; depth += 1) {
+    if ((current as { code?: unknown }).code === UNIQUE_VIOLATION) return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+/**
+ * Self-serve registration (ADR-0006). Profile and credential are written in
+ * one transaction so a customer can never exist without a way to sign in; the
+ * email uniqueness constraint is the only guard against a race between two
+ * registrations, surfaced as `EmailTakenError`.
+ */
+export class DrizzleCustomerRegistry implements CustomerRegistry {
+  constructor(private readonly db: TransactionalDatabase) {}
+
+  async create(customer: NewCustomer): Promise<CustomerProfile> {
+    try {
+      return await this.db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(customers)
+          .values({
+            id: customer.id,
+            email: customer.email,
+            displayName: customer.displayName,
+            kycStatus: "not_started",
+            tradingBlocked: true,
+          })
+          .returning();
+        if (!row) throw new Error("Customer insert returned no row");
+        await tx.insert(customerCredentials).values({ customerId: row.id, passwordHash: customer.passwordHash });
+        return toProfile(row);
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new EmailTakenError("An account with this email already exists");
+      throw error;
+    }
   }
 }
 

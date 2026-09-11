@@ -31,9 +31,9 @@ coverage/
 tmp/
 custodian-files/
 .trial-start
-.impeccable/review/
-.impeccable/build/
-.impeccable/mocks/
+**/.impeccable/review/
+**/.impeccable/build/
+**/.impeccable/mocks/
 
 # OS / editor
 .DS_Store

@@ -79,6 +79,89 @@ describe("sign-in", () => {
   });
 });
 
+describe("sign-up (ADR-0006)", () => {
+  const payload = { email: "  Ada.Lovelace@Example.com ", password: "long-enough-password", displayName: "  Ada   Lovelace " };
+
+  it("creates a customer who can sign in but not yet fund or invest", async () => {
+    const response = await app.inject({ method: "POST", url: "/v1/auth/sign-up", payload });
+    expect(response.statusCode).toBe(201);
+    const body = sessionResponse.parse(response.json());
+    expect(body.customer).toMatchObject({
+      email: "ada.lovelace@example.com",
+      displayName: "Ada Lovelace",
+      kycStatus: "not_started",
+      tradingBlocked: true,
+    });
+
+    const me = await app.inject({ method: "GET", url: "/v1/customer/me", headers: authed(body.token) });
+    expect(me.statusCode).toBe(200);
+    expect(meResponse.parse(me.json()).customer.id).toBe(body.customer.id);
+
+    const onboarding = await app.inject({ method: "GET", url: "/v1/customer/onboarding", headers: authed(body.token) });
+    expect(onboarding.statusCode).toBe(200);
+    expect(onboarding.json().steps.map((step: { key: string; status: string }) => [step.key, step.status])).toEqual([
+      ["account", "complete"],
+      ["identity", "current"],
+      ["bank", "upcoming"],
+      ["deposit", "upcoming"],
+      ["model", "upcoming"],
+    ]);
+
+    const deposit = await app.inject({
+      method: "POST",
+      url: "/v1/customer/transfers/deposits",
+      headers: authed(body.token),
+      payload: { amount: "100.00" },
+    });
+    expect(deposit.statusCode).toBeGreaterThanOrEqual(400);
+    expect(deposit.statusCode).toBeLessThan(500);
+  });
+
+  it("lets the new customer sign in with the email as typed", async () => {
+    expect((await app.inject({ method: "POST", url: "/v1/auth/sign-up", payload })).statusCode).toBe(201);
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/auth/sign-in",
+      payload: { email: "Ada.Lovelace@Example.com", password: "long-enough-password" },
+    });
+    expect(response.statusCode).toBe(200);
+  });
+
+  it("answers 409 email_taken for an existing email, whatever the case", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/auth/sign-up",
+      payload: { ...payload, email: "OLIVIA@demo.corgi" },
+    });
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toMatchObject({ error: "email_taken" });
+  });
+
+  it("rejects short passwords and empty names with 400", async () => {
+    for (const bad of [
+      { ...payload, password: "short" },
+      { ...payload, displayName: " " },
+      { ...payload, email: "not-an-email" },
+    ]) {
+      const response = await app.inject({ method: "POST", url: "/v1/auth/sign-up", payload: bad });
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toMatchObject({ error: "invalid_request" });
+    }
+  });
+});
+
+describe("public model catalogue (ADR-0006)", () => {
+  it("serves the configured models without a session", async () => {
+    const response = await app.inject({ method: "GET", url: "/v1/models" });
+    expect(response.statusCode).toBe(200);
+    const body = response.json() as { models: { code: string; allocations: { targetWeightBps: number }[] }[] };
+    expect(body.models.length).toBeGreaterThan(0);
+    for (const model of body.models) {
+      expect(model.allocations.reduce((sum, leg) => sum + leg.targetWeightBps, 0)).toBe(10_000);
+    }
+  });
+});
+
 describe("session gate", () => {
   it("refuses every customer route without a valid bearer", async () => {
     for (const url of ["/v1/customer/me", "/v1/customer/portfolio", "/v1/customer/activity", "/v1/customer/transfers"]) {

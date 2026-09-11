@@ -4,12 +4,14 @@ import type {
   CredentialsRepository,
   CustomerDirectory,
   CustomerProfile,
+  CustomerRegistry,
   FundingPort,
   IdentityInquiryRecord,
   IdentityInquiryRepository,
   IdentityPort,
   ModelCatalog,
   ModelDefinition,
+  NewCustomer,
   PortfolioAssignment,
   PortfolioAssignmentRepository,
   ProviderEvent,
@@ -34,6 +36,21 @@ export class FakeCredentials implements CredentialsRepository {
 
   findPasswordHash(customerId: string): Promise<string | null> {
     return Promise.resolve(this.hashes[customerId] ?? null);
+  }
+}
+
+export class FakeCustomerRegistry implements CustomerRegistry {
+  readonly created: NewCustomer[] = [];
+
+  create(customer: NewCustomer): Promise<CustomerProfile> {
+    this.created.push(customer);
+    return Promise.resolve({
+      id: customer.id,
+      email: customer.email,
+      displayName: customer.displayName,
+      kycStatus: "not_started",
+      tradingBlocked: true,
+    });
   }
 }
 

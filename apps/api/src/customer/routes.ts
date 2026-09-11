@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { chooseModel, createDeposit, deriveCustomerBalances, linkBankAccount, signIn, startVerification } from "@corgi/application";
-import { chooseModelRequest, createDepositRequest, isoDate, linkBankRequest, signInRequest } from "@corgi/contracts";
+import { chooseModel, createDeposit, deriveCustomerBalances, linkBankAccount, signIn, signUp, startVerification } from "@corgi/application";
+import { chooseModelRequest, createDepositRequest, isoDate, linkBankRequest, signInRequest, signUpRequest } from "@corgi/contracts";
 import { parseUsd } from "@corgi/domain";
 import { bearerToken } from "../auth/session.js";
 import { HttpError, parseBody, requireProvider, toHttp } from "../http.js";
@@ -30,6 +30,18 @@ export async function registerCustomerRoutes(app: FastifyInstance, services: Cus
     const session = await services.sessions.issue({ customerId: profile.id }, services.clock.now());
     return reply.send({ token: session.token, expiresAt: session.expiresAt.toISOString(), customer: toCustomerSummary(profile) });
   });
+
+  app.post("/auth/sign-up", async (request, reply) => {
+    const body = parseBody(signUpRequest, request.body);
+    const profile = await signUp({ directory: services.directory, registry: services.registry, ids: services.ids }, body);
+    const session = await services.sessions.issue({ customerId: profile.id }, services.clock.now());
+    return reply
+      .code(201)
+      .send({ token: session.token, expiresAt: session.expiresAt.toISOString(), customer: toCustomerSummary(profile) });
+  });
+
+  /** The four models are product configuration, not customer data; the landing page shows them (ADR-0006). */
+  app.get("/models", async () => ({ models: await loadModels(services) }));
 
   await app.register(async (authenticated) => {
     authenticated.addHook("preHandler", async (request: FastifyRequest, reply: FastifyReply) => {
