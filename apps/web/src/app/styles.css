@@ -75,6 +75,7 @@ code {
 
 .emblem {
   color: var(--accent);
+  flex-shrink: 0;
   image-rendering: pixelated;
 }
 
@@ -168,13 +169,15 @@ code {
 }
 
 .entry__facts {
+  align-items: center;
+  border-bottom: 1px solid var(--ink-strong);
   border-top: 1px solid var(--ink-strong);
   display: grid;
   gap: 0 2rem;
   grid-template-columns: repeat(4, 1fr);
   list-style: none;
-  margin: 2.5rem 0 0;
-  padding: 1rem 0 0;
+  margin: 0;
+  padding: clamp(1.25rem, 3vw, 2rem) 0;
 }
 
 .entry__facts li {
@@ -329,12 +332,14 @@ code {
   min-height: 0;
 }
 
-/* The sticky header already draws the rule; a second one directly beneath it would read as a mistake. */
+/* Hero fills the viewport below the sticky header; the facts row sits on the next rule. */
 .landing__main .entry__grid {
+  align-content: center;
   border-top: 0;
   margin-top: 0;
-  min-height: min(36rem, calc(100svh - 13rem));
-  padding-top: clamp(3rem, 6vw, 5rem);
+  min-height: calc(100svh - 4.5rem);
+  padding-bottom: clamp(2rem, 4vw, 3rem);
+  padding-top: clamp(2rem, 4vw, 3rem);
 }
 
 .entry__secondary {
@@ -606,12 +611,43 @@ code {
   margin: 0;
 }
 
+.landing__horizon {
+  margin-top: clamp(3rem, 6vw, 5rem);
+  overflow: hidden;
+  position: relative;
+}
+
+.landing__horizon-frames {
+  aspect-ratio: 21 / 5;
+  max-height: 14rem;
+  position: relative;
+  width: 100%;
+}
+
+.landing__horizon-frame {
+  height: 100%;
+  inset: 0;
+  mix-blend-mode: multiply;
+  object-fit: cover;
+  object-position: center 55%;
+  position: absolute;
+  width: 100%;
+}
+
+.landing__horizon-frame--a {
+  opacity: 1;
+}
+
+.landing__horizon-frame--b {
+  animation: plate-breathe 10s ease-in-out infinite;
+  opacity: 0;
+}
+
 .landing__footer {
   border-top: 1px solid var(--line);
   display: grid;
   gap: 1rem 2rem;
   grid-template-columns: auto minmax(0, 1fr);
-  margin-top: clamp(3rem, 6vw, 5rem);
   padding: 2rem clamp(1.25rem, 3vw, 3rem) 3rem;
 }
 
@@ -710,6 +746,7 @@ code {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .landing__horizon-frame--b,
   .plate__frame--b,
   .plate[data-inview="true"] .plate__rule,
   .plate[data-inview="true"] .plate__caption > * {
@@ -1758,7 +1795,9 @@ code {
   }
 
   .landing__main .entry__grid {
-    min-height: 0;
+    min-height: auto;
+    padding-bottom: 2rem;
+    padding-top: 2rem;
   }
 
   .plate,

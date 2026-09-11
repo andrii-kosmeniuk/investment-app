@@ -308,6 +308,8 @@ export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}
   };
   const broker: BrokerPort = {
     createAccount: (customerId) => Promise.resolve({ accountId: `alpaca-${customerId}`, status: "ACTIVE" }),
+    ensureAccount: (customerId, existingAccountId) =>
+      Promise.resolve({ accountId: existingAccountId ?? `alpaca-${customerId}`, status: "ACTIVE" }),
     submitNotionalOrder: (input) => {
       state.submittedOrders.push({ symbol: input.symbol, notionalCents: input.notionalCents });
       return Promise.resolve({ providerOrderId: `prov-${state.submittedOrders.length}`, status: "submitted" });

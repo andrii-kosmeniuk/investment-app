@@ -58,6 +58,12 @@ export interface InboxRepository {
 
 export interface BrokerPort {
   createAccount(customerId: string): Promise<{ accountId: string; status: string }>;
+  /**
+   * The Alpaca account orders for this customer should use. In sandbox, when a
+   * pre-funded dashboard account is configured, every customer routes through it
+   * so ledger cash can actually fill (ADR-0004 assumptions).
+   */
+  ensureAccount(customerId: string, existingAccountId?: string | null): Promise<{ accountId: string; status: string }>;
   submitNotionalOrder(input: {
     accountId: string;
     clientOrderId: string;

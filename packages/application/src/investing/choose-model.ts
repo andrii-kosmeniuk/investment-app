@@ -48,8 +48,10 @@ export async function chooseModel(
   if (!model) throw new NotFoundError(`unknown model: ${command.modelCode}`);
 
   const existing = await deps.portfolios.findForCustomer(command.customerId);
-  const brokerAccountId =
-    existing?.brokerAccountId ?? (await deps.broker.createAccount(command.customerId)).accountId;
+  const { accountId: brokerAccountId } = await deps.broker.ensureAccount(
+    command.customerId,
+    existing?.brokerAccountId,
+  );
   await deps.portfolios.assign({
     customerId: command.customerId,
     modelId: model.id,

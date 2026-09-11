@@ -333,6 +333,10 @@ export class FakeBroker implements BrokerPort {
     return Promise.resolve({ accountId: `acct-${customerId}`, status: "ACTIVE" });
   }
 
+  ensureAccount(customerId: string, existingAccountId?: string | null): Promise<{ accountId: string; status: string }> {
+    return Promise.resolve({ accountId: existingAccountId ?? `acct-${customerId}`, status: "ACTIVE" });
+  }
+
   submitNotionalOrder(input: {
     accountId: string;
     clientOrderId: string;

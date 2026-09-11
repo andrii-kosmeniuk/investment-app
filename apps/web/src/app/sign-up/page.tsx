@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Brand } from "../../components/Brand";
-import { CharacterField } from "../../components/CharacterField";
+import { CorgiField } from "../../components/CorgiField";
 import { SignUpForm } from "../../components/SignUpForm";
 import { readSessionToken } from "../../server/session";
 
@@ -31,7 +31,7 @@ export default async function SignUpPage() {
           <SignUpForm />
         </div>
         <div className="entry__art" aria-hidden="true">
-          <CharacterField animate inkVar="--ink-strong" className="entry__canvas" />
+          <CorgiField animate inkVar="--ink-strong" className="entry__canvas" />
         </div>
       </section>
     </main>

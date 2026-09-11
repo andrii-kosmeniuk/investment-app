@@ -1,9 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ModelResponse } from "@corgi/contracts";
 import { AllocationBar, EnvironmentBadge, StatusPill } from "@corgi/ui";
 import { Brand } from "../components/Brand";
-import { CharacterField } from "../components/CharacterField";
+import { CorgiField } from "../components/CorgiField";
 import { LandingNav } from "../components/landing/LandingNav";
 import { Plate } from "../components/landing/Plate";
 import {
@@ -58,7 +59,7 @@ export default async function EntryPage() {
             </div>
           </div>
           <div className="entry__art" aria-hidden="true">
-            <CharacterField animate inkVar="--ink-strong" className="entry__canvas" />
+            <CorgiField animate inkVar="--ink-strong" className="entry__canvas" />
           </div>
         </section>
 
@@ -173,6 +174,27 @@ export default async function EntryPage() {
           </div>
         </section>
       </main>
+
+      <div className="landing__horizon" aria-hidden="true">
+        <div className="landing__horizon-frames">
+          <Image
+            src="/plates/footer-a.png"
+            alt=""
+            width={2100}
+            height={500}
+            unoptimized
+            className="landing__horizon-frame landing__horizon-frame--a"
+          />
+          <Image
+            src="/plates/footer-b.png"
+            alt=""
+            width={2100}
+            height={500}
+            unoptimized
+            className="landing__horizon-frame landing__horizon-frame--b"
+          />
+        </div>
+      </div>
 
       <footer className="landing__footer">
         <Brand />

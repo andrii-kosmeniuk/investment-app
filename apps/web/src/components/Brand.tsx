@@ -1,13 +1,32 @@
 import Link from "next/link";
 
-/** 8×8 pixel emblem — the one place the brand orange appears as a mark. */
-export function Emblem({ size = 20 }: { readonly size?: number }) {
+/** 8×8 pixel emblem — diamond outline with a 2×2 centre block. Render at 16 or 24 px. */
+const EMBLEM_PIXELS = [
+  "00111100",
+  "01100110",
+  "11000011",
+  "11001111",
+  "11001111",
+  "11000011",
+  "01100110",
+  "00111100",
+] as const;
+
+export function Emblem({ size = 16 }: { readonly size?: number }) {
   return (
-    <svg className="emblem" viewBox="0 0 8 8" width={size} height={size} aria-hidden="true" shapeRendering="crispEdges">
-      <path
-        fill="currentColor"
-        d="M3 0h2v1H3zM2 1h1v1H2zM5 1h1v1H5zM1 2h1v1H1zM6 2h1v1H6zM0 3h1v2H0zM7 3h1v2H7zM3 3h2v2H3zM1 5h1v1H1zM6 5h1v1H6zM2 6h1v1H2zM5 6h1v1H5zM3 7h2v1H3z"
-      />
+    <svg
+      className="emblem"
+      viewBox="0 0 8 8"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      shapeRendering="crispEdges"
+    >
+      {EMBLEM_PIXELS.flatMap((row, y) =>
+        [...row].flatMap((cell, x) =>
+          cell === "1" ? [<rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill="currentColor" />] : [],
+        ),
+      )}
     </svg>
   );
 }

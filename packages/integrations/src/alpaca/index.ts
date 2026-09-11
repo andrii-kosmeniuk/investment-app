@@ -107,7 +107,18 @@ export class AlpacaBrokerAdapter implements BrokerPort {
     });
   }
 
+  async ensureAccount(customerId: string, existingAccountId?: string | null): Promise<{ accountId: string; status: string }> {
+    if (this.#config.sandboxAccountId) {
+      return { accountId: this.#config.sandboxAccountId, status: "ACTIVE" };
+    }
+    if (existingAccountId) return { accountId: existingAccountId, status: "ACTIVE" };
+    return this.createAccount(customerId);
+  }
+
   async createAccount(customerId: string): Promise<{ accountId: string; status: string }> {
+    if (this.#config.sandboxAccountId) {
+      return { accountId: this.#config.sandboxAccountId, status: "ACTIVE" };
+    }
     try {
       const result = await this.#request<{ id: string; status: string }>("/v1/accounts", {
         method: "POST",
