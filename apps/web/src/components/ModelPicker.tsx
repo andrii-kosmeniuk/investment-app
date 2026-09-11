@@ -7,12 +7,20 @@ import { type ChooseModelResult, chooseModelAction } from "../server/actions";
 
 const RISK = ["", "Conservative", "Cautious", "Balanced", "Growth", "Aggressive"] as const;
 
-function failureCopy(code: string | null, error: string | null): string {
+/**
+ * The model choice is saved before orders are sent (ASSUMPTIONS: record the
+ * change, execute in the next window), so a broker failure is a partial
+ * outcome and the message must say which half happened. `modelSaved` is read
+ * from the refreshed page, not assumed.
+ */
+function failureCopy(code: string | null, error: string | null, model: { name: string; saved: boolean } | null): string {
   switch (code) {
     case "alpaca_not_configured":
       return "Order placement is not available in this environment yet.";
     case "provider_unavailable":
-      return "Our broker did not accept the request, so nothing was bought. Try again in a moment.";
+      return model?.saved
+        ? `${model.name} is now your model, but our broker did not accept the orders, so your cash has not been invested yet. Nothing was bought; try again in a moment.`
+        : "Our broker did not accept the request, so nothing was bought and your model was not changed. Try again in a moment.";
     default:
       return error ?? "The model could not be chosen.";
   }
@@ -37,7 +45,9 @@ export function ModelPicker({
   const [pending, start] = useTransition();
   const [selected, setSelected] = useState<string | null>(null);
   const [plan, setPlan] = useState<ChooseModelResult | null>(null);
-  const [outcome, setOutcome] = useState<{ tone: "positive" | "negative" | "info"; text: string } | null>(null);
+  const [outcome, setOutcome] = useState<
+    { tone: "positive" | "info"; text: string } | { tone: "negative"; code: string | null; error: string | null; modelCode: string } | null
+  >(null);
 
   const available = BigInt(availableCents);
 
@@ -48,10 +58,7 @@ export function ModelPicker({
       const result = await chooseModelAction(code, confirmed);
       if (!result.ok || !result.data) {
         setPlan(null);
-        setOutcome({
-          tone: "negative",
-          text: failureCopy(result.code, result.error),
-        });
+        setOutcome({ tone: "negative", code: result.code, error: result.error, modelCode: code });
         return;
       }
       if (!result.data.placed) {
@@ -125,7 +132,17 @@ export function ModelPicker({
         </div>
       ) : null}
 
-      {outcome ? <InlineAlert tone={outcome.tone}>{outcome.text}</InlineAlert> : null}
+      {outcome ? (
+        <InlineAlert tone={outcome.tone}>
+          {outcome.tone === "negative"
+            ? failureCopy(outcome.code, outcome.error, {
+                name: models.find((model) => model.code === outcome.modelCode)?.name ?? "The model",
+                // The action revalidated the page, so `currentCode` is what the database says now.
+                saved: currentCode === outcome.modelCode,
+              })
+            : outcome.text}
+        </InlineAlert>
+      ) : null}
     </div>
   );
 }
