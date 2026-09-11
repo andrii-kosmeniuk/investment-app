@@ -7,11 +7,21 @@ import { restatementReasonLabel } from "../lib/copy";
 import type { ActionResult } from "../server/actions";
 import { type LiveFireAction, liveFireAction } from "../server/ops-actions";
 
+interface ScenarioField {
+  readonly name: string;
+  readonly label: string;
+  readonly placeholder?: string;
+  readonly type?: "text" | "date";
+  readonly hint?: string;
+  /** Renders a select instead of an input. */
+  readonly options?: readonly { value: string; label: string }[];
+}
+
 interface Scenario {
   readonly action: LiveFireAction;
   readonly title: string;
   readonly detail: string;
-  readonly fields: readonly { name: string; label: string; placeholder?: string; type?: "text" | "date"; hint?: string }[];
+  readonly fields: readonly ScenarioField[];
 }
 
 const SCENARIOS: readonly Scenario[] = [
@@ -68,6 +78,41 @@ const SCENARIOS: readonly Scenario[] = [
       { name: "to", label: "To", type: "date" },
     ],
   },
+  {
+    action: "custodian_file",
+    title: "Custodian file",
+    detail:
+      "There is no real custodian, so the simulator projects our own ledger as of the close and stores the CSV. Pick a tamper to plant a discrepancy the reconciliation must catch — the file is labelled as tampered.",
+    fields: [
+      { name: "businessDate", label: "Business date", type: "date" },
+      {
+        name: "tamperKind",
+        label: "Tamper",
+        options: [
+          { value: "", label: "None — clean file" },
+          { value: "position", label: "Position units (delta in micro-units)" },
+          { value: "cash", label: "Cash (delta in cents)" },
+          { value: "drop_transaction", label: "Drop a transaction (entry id)" },
+        ],
+      },
+      { name: "customerId", label: "Customer ID", placeholder: "uuid (for a tamper)" },
+      { name: "symbol", label: "Symbol", placeholder: "VTI (position tamper)" },
+      { name: "delta", label: "Delta", placeholder: "-500000", hint: "Signed integer: micro-units for a position, cents for cash." },
+      { name: "entryId", label: "Entry ID", placeholder: "uuid (drop a transaction)" },
+    ],
+  },
+  {
+    action: "reconcile",
+    title: "Run reconciliation",
+    detail: "The 06:10 ET job, on demand: ledger vs the latest custodian file on or before the date, broker positions as a third column. Re-running refreshes open breaks and never closes one.",
+    fields: [{ name: "businessDate", label: "Business date", type: "date" }],
+  },
+  {
+    action: "settle_trades",
+    title: "Settle due trades",
+    detail: "The 00:05 ET job: every fill whose T+1 contractual date has arrived moves its cash from unsettled to settled. Idempotent per fill.",
+    fields: [],
+  },
 ];
 
 function Outcome({ result }: { readonly result: LiveFireResponse }) {
@@ -102,7 +147,7 @@ function Outcome({ result }: { readonly result: LiveFireResponse }) {
 function ScenarioForm({ scenario }: { readonly scenario: Scenario }) {
   const [state, action, pending] = useActionState<ActionResult<LiveFireResponse> | null, FormData>(liveFireAction, null);
   return (
-    <article className="live-fire__scenario">
+    <article className="live-fire__scenario" id={scenario.action}>
       <header>
         <h2>{scenario.title}</h2>
         <p className="muted small">{scenario.detail}</p>
@@ -110,18 +155,35 @@ function ScenarioForm({ scenario }: { readonly scenario: Scenario }) {
       <form action={action} className="ops-form" noValidate>
         <input type="hidden" name="action" value={scenario.action} />
         <div className="ops-form__grid">
-          {scenario.fields.map((f) => (
-            <Field
-              key={f.name}
-              id={`${scenario.action}-${f.name}`}
-              name={f.name}
-              label={f.label}
-              type={f.type ?? "text"}
-              autoComplete="off"
-              {...(f.placeholder ? { placeholder: f.placeholder } : {})}
-              {...(f.hint ? { hint: f.hint } : {})}
-            />
-          ))}
+          {scenario.fields.map((f) =>
+            f.options ? (
+              <div key={f.name} className="field">
+                <label htmlFor={`${scenario.action}-${f.name}`} className="field__label">
+                  {f.label}
+                </label>
+                <div className="field__control">
+                  <select id={`${scenario.action}-${f.name}`} name={f.name} defaultValue="">
+                    {f.options.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ) : (
+              <Field
+                key={f.name}
+                id={`${scenario.action}-${f.name}`}
+                name={f.name}
+                label={f.label}
+                type={f.type ?? "text"}
+                autoComplete="off"
+                {...(f.placeholder ? { placeholder: f.placeholder } : {})}
+                {...(f.hint ? { hint: f.hint } : {})}
+              />
+            ),
+          )}
         </div>
         {state && !state.ok ? (
           <InlineAlert tone="negative" title="Nothing was changed">

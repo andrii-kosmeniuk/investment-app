@@ -13,6 +13,7 @@ import {
   FakeBroker,
   FakeCustomerRepository,
   FakeOrderRepository,
+  FakeSettlementRepository,
   FakeTaxLotRepository,
   InMemoryLedgerRepository,
   fixedClock,
@@ -188,6 +189,7 @@ describe("investing — apply fills", () => {
       resolver: staticResolver(),
       orders,
       taxLots: new FakeTaxLotRepository(),
+      settlements: new FakeSettlementRepository(),
     };
   }
 

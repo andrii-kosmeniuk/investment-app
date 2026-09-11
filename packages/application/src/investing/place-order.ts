@@ -20,6 +20,11 @@ export interface PlaceOrderCommand {
    * queue is for money-out and bulk rebalances, not a customer's own buys.
    */
   readonly customerConfirmed?: boolean;
+  /**
+   * Firm-initiated sell approved by an operator (sell-to-cover after a
+   * returned deposit): the customer's trading block does not apply to it.
+   */
+  readonly firmInitiatedSell?: boolean;
 }
 
 export interface PlaceOrderDeps {
@@ -51,7 +56,8 @@ export async function placeOrder(
 ): Promise<PlaceOrderResult> {
   const customer = await deps.customers.findById(command.customerId);
   if (!customer) throw new Error(`unknown customer: ${command.customerId}`);
-  if (customer.kycStatus !== "approved" || customer.tradingBlocked) {
+  const firmSell = command.side === "sell" && command.firmInitiatedSell === true;
+  if (customer.kycStatus !== "approved" || (customer.tradingBlocked && !firmSell)) {
     throw new OrderNotPermittedError("Customer is not permitted to trade");
   }
   if (!customer.brokerAccountId) {

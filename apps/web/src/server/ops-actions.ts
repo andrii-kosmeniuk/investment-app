@@ -2,32 +2,34 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { LiveFireResponse } from "@corgi/contracts";
+import type { GenerateCustodianFileRequest, LiveFireResponse } from "@corgi/contracts";
 import { type ActionResult } from "./actions";
-import { ApiClientError, createApiClient } from "./api-client";
+import { createApiClient } from "./api-client";
 import { apiBaseUrl } from "./api";
-import { clearOperatorCookie, opsApi, writeOperatorCookie } from "./ops-session";
-
-const fail = <T,>(error: unknown): ActionResult<T> => {
-  if (error instanceof ApiClientError) {
-    if (error.status === 503) return { ok: false, error: "The live-fire console is switched off in this environment (LIVE_FIRE_TOKEN is not set on the API).", code: error.code, data: null };
-    if (error.status === 401) return { ok: false, error: "Operator token was not accepted.", code: error.code, data: null };
-    return { ok: false, error: error.message, code: error.code, data: null };
-  }
-  return { ok: false, error: "Something went wrong on our side. Nothing was changed.", code: "unknown", data: null };
-};
+import { formField as field, opsFailure as fail, optionalField as optional } from "./ops-errors";
+import { clearOperatorCookie, opsApi, writeOperatorCookie, writeOperatorIdCookie } from "./ops-session";
 
 export async function opsSignInAction(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const token = String(formData.get("token") ?? "").trim();
   if (token.length < 24) return { ok: false, error: "Enter the operator token.", code: "invalid_request", data: null };
   try {
     // Verify before storing: a wrong token never becomes a cookie.
-    await createApiClient({ baseUrl: apiBaseUrl(), token }).restatements();
+    await createApiClient({ baseUrl: apiBaseUrl(), token }).operators();
     await writeOperatorCookie(token);
   } catch (error) {
     return fail(error);
   }
-  redirect("/ops/live-fire");
+  redirect("/ops");
+}
+
+/** Names the acting human. Only ids the API listed are accepted, so the cookie can't invent an operator. */
+export async function chooseOperatorAction(formData: FormData): Promise<void> {
+  const api = await opsApi();
+  const operatorId = field(formData, "operatorId");
+  if (!api || !operatorId) return;
+  const { operators } = await api.operators();
+  if (operators.some((operator) => operator.id === operatorId)) await writeOperatorIdCookie(operatorId);
+  revalidatePath("/ops", "layout");
 }
 
 export async function opsSignOutAction(): Promise<void> {
@@ -37,14 +39,26 @@ export async function opsSignOutAction(): Promise<void> {
 
 export type LiveFireAction = LiveFireResponse["action"];
 
-const field = (formData: FormData, name: string): string => String(formData.get(name) ?? "").trim();
-const optional = (value: string): string | undefined => (value === "" ? undefined : value);
+function tamperFrom(formData: FormData): GenerateCustodianFileRequest["tamper"] {
+  const kind = field(formData, "tamperKind");
+  const customerId = field(formData, "customerId");
+  switch (kind) {
+    case "position":
+      return { kind, customerId, symbol: field(formData, "symbol"), deltaUnitsMicro: field(formData, "delta") };
+    case "cash":
+      return { kind, customerId, deltaCents: field(formData, "delta") };
+    case "drop_transaction":
+      return { kind, customerId, entryId: field(formData, "entryId") };
+    default:
+      return undefined;
+  }
+}
 
 /**
  * One server action for the whole console; the `action` field says which
  * scenario to fire. Bodies are passed through as the operator typed them — the
  * API validates against `@corgi/contracts` and answers with the real
- * restatement summary, which the console shows verbatim.
+ * summary, which the console shows verbatim.
  */
 export async function liveFireAction(_previous: ActionResult<LiveFireResponse> | null, formData: FormData): Promise<ActionResult<LiveFireResponse>> {
   const api = await opsApi();
@@ -82,10 +96,21 @@ export async function liveFireAction(_previous: ActionResult<LiveFireResponse> |
       case "collect_closes":
         result = await api.collectCloses({ from: field(formData, "from"), to: field(formData, "to") });
         break;
+      case "custodian_file": {
+        const tamper = tamperFrom(formData);
+        result = await api.custodianFile({ businessDate: field(formData, "businessDate"), ...(tamper ? { tamper } : {}) });
+        break;
+      }
+      case "reconcile":
+        result = await api.runReconciliation({ businessDate: field(formData, "businessDate") });
+        break;
+      case "settle_trades":
+        result = await api.settleTrades();
+        break;
       default:
         return { ok: false, error: "Unknown live-fire action.", code: "invalid_request", data: null };
     }
-    revalidatePath("/ops/restatements");
+    revalidatePath("/ops", "layout");
     revalidatePath("/performance");
     revalidatePath("/portfolio");
     revalidatePath("/overview");

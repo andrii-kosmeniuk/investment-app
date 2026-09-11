@@ -2,10 +2,15 @@ import pino from "pino";
 import { processInboxBatch } from "@corgi/application";
 import {
   DrizzleAccountResolver,
+  DrizzleActorDirectory,
+  DrizzleApprovalRepository,
   DrizzleCustomerRepository,
   DrizzleInboxRepository,
+  DrizzleLedgerAccountDirectory,
   DrizzleLedgerRepository,
   DrizzleOrderRepository,
+  DrizzlePriceRepository,
+  DrizzleSettlementRepository,
   DrizzleTaxLotRepository,
   DrizzleTransferRepository,
   createPool,
@@ -23,6 +28,7 @@ import { eq } from "drizzle-orm";
 import { buildProviderHandlers, canonicalAlpacaType } from "./composition.js";
 import { loadWorkerConfig } from "./config.js";
 import { financialJobs, scheduleJobs } from "./jobs.js";
+import { operationsJobs } from "./operations-jobs.js";
 import { valuationJobs } from "./valuation-jobs.js";
 
 const config = loadWorkerConfig();
@@ -58,6 +64,11 @@ const handlers = buildProviderHandlers({
   taxLots: new DrizzleTaxLotRepository(db),
   transfers: new DrizzleTransferRepository(db),
   customers: new DrizzleCustomerRepository(db),
+  settlements: new DrizzleSettlementRepository(db),
+  approvals: new DrizzleApprovalRepository(db),
+  actors: new DrizzleActorDirectory(db),
+  accounts: new DrizzleLedgerAccountDirectory(db),
+  prices: new DrizzlePriceRepository(db),
 });
 
 async function saveCursor(provider: string, cursor: string): Promise<void> {
@@ -83,19 +94,15 @@ const valuation = valuationJobs({
   }),
 });
 
+const operations = operationsJobs({ db, broker, clock, ids, logger });
+
 const scheduled = scheduleJobs(
   financialJobs({
-    async settleTrades() {
-      logger.info("settlement handler boundary ready");
-    },
+    settleTrades: operations.settleTrades,
     collectClosingPrices: valuation.collectClosingPrices,
     valuePortfolios: valuation.valuePortfolios,
-    async importCustodianFile() {
-      logger.info("custodian import handler boundary ready");
-    },
-    async reconcileCustodian() {
-      logger.info("reconciliation handler boundary ready");
-    },
+    importCustodianFile: operations.importCustodianFile,
+    reconcileCustodian: operations.reconcileCustodian,
   }),
   logger,
   shutdown.signal,

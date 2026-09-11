@@ -312,7 +312,7 @@ describe("investing", () => {
     });
     expect(confirmed.statusCode).toBe(201);
     expect(state.submittedOrders).toHaveLength(3);
-    expect(state.approvals).toHaveLength(0);
+    expect(state.approvals.requests).toHaveLength(0);
   });
 
   it("maps an unknown model to 404 and a blocked customer to 403", async () => {

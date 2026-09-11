@@ -293,10 +293,16 @@ export const settlements = pgTable(
     tradeDate: date("trade_date").notNull(),
     contractualSettlementDate: date("contractual_settlement_date").notNull(),
     status: text("status").notNull(),
+    /** Signed cash the settlement moves: cost of a buy, proceeds of a sell. */
+    amountCents: bigint("amount_cents", { mode: "bigint" }).notNull().default(sql`0`),
+    side: text("side").notNull().default("buy"),
     journalEntryId: uuid("journal_entry_id").references(() => journalEntries.id),
     createdAt: createdAt(),
   },
-  (table) => [uniqueIndex("settlements_fill_uq").on(table.fillExternalId)],
+  (table) => [
+    uniqueIndex("settlements_fill_uq").on(table.fillExternalId),
+    index("settlements_due_idx").on(table.status, table.contractualSettlementDate),
+  ],
 );
 
 export const rebalanceProposals = pgTable("rebalance_proposals", {
@@ -456,6 +462,8 @@ export const custodianFiles = pgTable("custodian_files", {
   kind: text("kind").notNull(),
   sha256: text("sha256").notNull(),
   storagePath: text("storage_path").notNull(),
+  /** The file itself (CSV). Files are kilobytes; a blob store is not worth a provider (ADR-0005). */
+  content: text("content").notNull().default(""),
   source: text("source").notNull().default("simulator"),
   receivedAt: createdAt(),
 });
@@ -482,11 +490,22 @@ export const reconBreaks = pgTable(
     ledgerValue: text("ledger_value").notNull(),
     custodianValue: text("custodian_value").notNull(),
     delta: text("delta").notNull(),
+    /** Third column: the broker API's view when it was reachable (ADR-0005). */
+    brokerValue: text("broker_value"),
     status: text("status").notNull().default("open"),
     resolutionEntryId: uuid("resolution_entry_id").references(() => journalEntries.id),
+    resolutionNote: text("resolution_note"),
+    resolvedByActorId: uuid("resolved_by_actor_id").references(() => actors.id),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (table) => [index("recon_breaks_status_age_idx").on(table.status, table.createdAt)],
+  (table) => [
+    index("recon_breaks_status_age_idx").on(table.status, table.createdAt),
+    // One live break per identity; a resolved break that reappears is a new break with a new first run.
+    uniqueIndex("recon_breaks_open_identity_uq")
+      .on(table.customerId, table.category, table.key)
+      .where(sql`${table.status} = 'open'`),
+  ],
 );
 
 export const providerStates = pgTable("provider_states", {

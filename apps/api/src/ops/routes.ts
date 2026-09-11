@@ -22,6 +22,7 @@ import { bearerToken } from "../auth/session.js";
 import { loadRestatements } from "../customer/read-models.js";
 import type { CustomerServices } from "../customer/services.js";
 import { HttpError, parseBody, requireProvider, toHttp } from "../http.js";
+import { registerOperationsRoutes } from "./operations-routes.js";
 
 function tokenMatches(presented: string | null, expected: string): boolean {
   if (!presented) return false;
@@ -75,6 +76,8 @@ export async function registerOpsRoutes(app: FastifyInstance, services: Customer
     clock: services.clock,
     ids: services.ids,
   };
+
+  registerOperationsRoutes(app, services);
 
   app.get("/ops/restatements", async (request): Promise<RestatementsResponse> => {
     const query = request.query as { customerId?: string };

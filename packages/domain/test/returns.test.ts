@@ -9,6 +9,7 @@ import {
   firstOfYear,
   isWeekend,
   periodReturn,
+  previousBusinessDay,
   returnToBpsE4,
   subPeriods,
 } from "../src/index.js";
@@ -34,6 +35,8 @@ describe("market calendar", () => {
     expect(firstOfYear("2026-09-17")).toBe("2026-01-01");
     expect(isWeekend("2026-09-12")).toBe(true);
     expect(isWeekend("2026-09-14")).toBe(false);
+    expect(previousBusinessDay("2026-09-14")).toBe("2026-09-11"); // Monday → Friday
+    expect(previousBusinessDay("2026-09-11")).toBe("2026-09-10");
     expect(() => daysBetween("2026/09/12", "2026-09-14")).toThrow(TypeError);
   });
 });

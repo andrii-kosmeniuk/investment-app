@@ -148,7 +148,11 @@ export default async function PortfolioPage() {
         <div className="section__heading">
           <h2>{currentModel ? "Change model" : "Choose a model"}</h2>
         </div>
-        {!canInvest ? (
+        {customer.kycStatus === "approved" && customer.tradingBlocked ? (
+          <InlineAlert tone="warning" title="Trading is paused">
+            A deposit was returned by your bank after it had been invested. We are settling the difference and will reopen trading as soon as that is done; your holdings are unchanged in the meantime.
+          </InlineAlert>
+        ) : !canInvest ? (
           <InlineAlert tone="warning" title="Investing is not open yet">
             Choose a model once your identity check is approved. <Link href="/onboarding">See onboarding</Link>.
           </InlineAlert>

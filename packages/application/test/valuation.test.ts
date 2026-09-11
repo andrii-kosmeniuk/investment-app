@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { type JournalEntry, cents, microUnits, postingPatterns } from "@corgi/domain";
 import {
-  type LedgerAccountDirectory,
   type ReturnPeriod,
   applyStockSplit,
   buildPerformanceView,
@@ -20,27 +19,9 @@ import {
   InMemoryPriceRepository,
   InMemoryValuationRepository,
 } from "../src/testing/in-memory-valuation.js";
-import { FakeTaxLotRepository, InMemoryLedgerRepository, sequentialIds, staticResolver } from "./fakes.js";
+import { FakeTaxLotRepository, InMemoryLedgerRepository, directoryOver, sequentialIds, staticResolver } from "./fakes.js";
 
 const CUSTOMER = "cust-1";
-
-/** Directory over the in-memory ledger: positions are whatever `:pos:` accounts have postings. */
-function directoryOver(ledger: InMemoryLedgerRepository): LedgerAccountDirectory {
-  const positionAccounts = () =>
-    ledger.all.flatMap((entry) => entry.postings.map((p) => p.accountId)).filter((id) => id.includes(":pos:"));
-  return {
-    pathsById: (ids) => Promise.resolve(new Map(ids.map((id) => [id, id]))),
-    positionSymbols: (customerId) =>
-      Promise.resolve(
-        [...new Set(positionAccounts().filter((id) => id.startsWith(`${customerId}:pos:`)).map((id) => id.split(":pos:")[1]!))].sort(),
-      ),
-    allPositionSymbols: () => Promise.resolve([...new Set(positionAccounts().map((id) => id.split(":pos:")[1]!))].sort()),
-    customersWithAccounts: () =>
-      Promise.resolve([...new Set(ledger.all.flatMap((e) => e.postings.map((p) => p.accountId.split(":")[0]!)))].filter((c) => c.startsWith("cust"))),
-    customersHolding: (symbol) =>
-      Promise.resolve([...new Set(positionAccounts().filter((id) => id.endsWith(`:pos:${symbol}`)).map((id) => id.split(":")[0]!))]),
-  };
-}
 
 function harness() {
   let now = new Date("2026-09-03T21:00:00Z");

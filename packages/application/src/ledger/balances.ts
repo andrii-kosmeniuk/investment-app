@@ -20,6 +20,8 @@ export interface CustomerBalances {
   readonly withdrawableCents: bigint;
   /** Dividends accrued on ex-date but not yet paid; counted in value, not spendable. */
   readonly dividendReceivableCents: bigint;
+  /** Firm's claim after a deposit was returned post-investment; > 0 while unrecovered. */
+  readonly bounceRecoveryCents: bigint;
   /** Position units per symbol (micro-units), read from position accounts only. */
   readonly positionsMicro: ReadonlyMap<string, bigint>;
 }
@@ -66,6 +68,7 @@ export async function deriveCustomerBalances(
     availableToTradeCents: settledCents + signedBuys + signedSells,
     withdrawableCents: settledCents + signedBuys,
     dividendReceivableCents: usd(accounts.dividendReceivable),
+    bounceRecoveryCents: usd(accounts.bounceRecovery),
     positionsMicro,
   };
 }

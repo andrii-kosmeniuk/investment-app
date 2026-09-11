@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ErrorState, StatusPill, Timestamp } from "@corgi/ui";
-import { OperatorSignIn } from "../../../components/OperatorSignIn";
-import { OpsShell } from "../../../components/OpsShell";
 import { PERIOD_LABEL, dollars, percent, restatementReasonLabel } from "../../../lib/copy";
 import { load } from "../../../server/api";
-import { opsSignOutAction } from "../../../server/ops-actions";
-import { opsApi } from "../../../server/ops-session";
+import { OpsPage, OpsSignedOut, opsContext } from "../../../server/ops-page";
 
 export const metadata: Metadata = { title: "Restatements · Operations" };
 
@@ -15,34 +12,12 @@ const figure = (kind: "valuation" | "return", raw: string): string => (raw === "
 /** Every superseding version across all customers, newest first: the audit trail behind each "Restated" pill. */
 export default async function RestatementsPage({ searchParams }: { readonly searchParams: Promise<{ customerId?: string }> }) {
   const { customerId } = await searchParams;
-  const api = await opsApi();
+  const context = await opsContext();
+  if (!context) return <OpsSignedOut current="/ops/restatements" title="Restatements" />;
 
-  if (!api) {
-    return (
-      <OpsShell current="/ops/restatements">
-        <header>
-          <div>
-            <h1>Restatements</h1>
-            <p>Operator token required.</p>
-          </div>
-        </header>
-        <OperatorSignIn />
-      </OpsShell>
-    );
-  }
-
-  const audit = await load(() => api.restatements(customerId ?? null));
+  const audit = await load(() => context.api.restatements(customerId ?? null));
   return (
-    <OpsShell
-      current="/ops/restatements"
-      account={
-        <form action={opsSignOutAction}>
-          <button type="submit" className="text-link">
-            Close operator session
-          </button>
-        </form>
-      }
-    >
+    <OpsPage context={context} current="/ops/restatements">
       <header>
         <div>
           <h1>Restatements</h1>
@@ -110,6 +85,6 @@ export default async function RestatementsPage({ searchParams }: { readonly sear
           </tbody>
         </table>
       )}
-    </OpsShell>
+    </OpsPage>
   );
 }

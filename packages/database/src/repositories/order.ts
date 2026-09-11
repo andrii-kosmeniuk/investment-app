@@ -51,6 +51,11 @@ export class DrizzleOrderRepository implements OrderRepository {
     });
   }
 
+  async findById(id: string): Promise<OrderRecord | null> {
+    const [row] = await this.db.select().from(orders).where(eq(orders.id, id)).limit(1);
+    return row ? toRecord(row) : null;
+  }
+
   async findByClientOrderId(clientOrderId: string): Promise<OrderRecord | null> {
     const [row] = await this.db
       .select()

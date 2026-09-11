@@ -129,6 +129,7 @@ try {
       { email: "maker@demo.corgi", displayName: "Sam Chen", role: "ops", actorType: "human" },
       { email: "checker@demo.corgi", displayName: "Maya Brooks", role: "ops", actorType: "human" },
       { email: "agent@demo.corgi", displayName: "Portfolio Assistant", role: "agent", actorType: "agent" },
+      { email: "system@demo.corgi", displayName: "Corgi System", role: "system", actorType: "agent" },
     ])
     .onConflictDoNothing({ target: actors.email });
 
@@ -148,7 +149,7 @@ try {
     await credentials.setPasswordHash(row.id, passwordHash);
   }
 
-  console.log(`Seeded ${MODELS.length} models, 3 actors, ${DEMO_CUSTOMERS.length} demo customers.`);
+  console.log(`Seeded ${MODELS.length} models, 4 actors, ${DEMO_CUSTOMERS.length} demo customers.`);
   console.log("Demo logins (password for both):", DEMO_PASSWORD);
   for (const customer of DEMO_CUSTOMERS) {
     console.log(`  ${customer.email}  (${customer.kycStatus})`);

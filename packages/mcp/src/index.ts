@@ -14,7 +14,15 @@ export interface AgentReadService {
 }
 
 export interface AgentWriteService {
-  proposeRebalance(customerId: string, reason: string): Promise<{ approvalId: string }>;
+  /** Files drift legs for human approval; `in_balance` when there is nothing to trade. */
+  proposeRebalance(
+    customerId: string,
+    reason: string,
+  ): Promise<{
+    status: "filed" | "in_balance";
+    approvalId: string | null;
+    legs: readonly { symbol: string; side: "buy" | "sell"; notionalCents: string }[];
+  }>;
   requestWithdrawal(
     customerId: string,
     amountCents: bigint,
@@ -78,7 +86,7 @@ export function createAgentServer(
   );
   server.tool(
     "propose_rebalance",
-    "Create a rebalance proposal in the human approval queue. Never submits orders.",
+    "Value the customer at the latest closes, compute drift legs against their model and file them in the human approval queue. Never submits orders.",
     { customerId: z.string().uuid(), reason: z.string().min(10).max(500) },
     async ({ customerId, reason }) =>
       textResult(await writes.proposeRebalance(customerId, reason)),

@@ -1,4 +1,4 @@
-import type { LotAdjustment, TaxLotRepository } from "@corgi/application";
+import type { LotAdjustment, RecordedLotConsumption, TaxLotRepository } from "@corgi/application";
 import { type LotAvailability, type TaxLot, cents, microUnits } from "@corgi/domain";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import type { TransactionalDatabase } from "../pool.js";
@@ -40,6 +40,23 @@ export class DrizzleTaxLotRepository implements TaxLotRepository {
       basisPerUnitAfter: adjustment.basisPerUnitAfter,
       effectiveAt: adjustment.effectiveAt,
     });
+  }
+
+  async consume(consumptions: readonly RecordedLotConsumption[]): Promise<void> {
+    if (consumptions.length === 0) return;
+    await this.db.insert(lotConsumptions).values(
+      consumptions.map((c) => ({
+        id: c.id,
+        lotId: c.lotId,
+        sellEntryId: c.sellEntryId,
+        unitsMicro: c.units,
+        proceedsCents: c.proceeds,
+        basisCents: c.basis,
+        realizedCents: c.realizedGain,
+        term: c.term,
+        consumedAt: c.consumedAt,
+      })),
+    );
   }
 
   async availableLots(customerId: string, symbol: string): Promise<readonly LotAvailability[]> {

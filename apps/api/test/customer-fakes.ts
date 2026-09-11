@@ -1,6 +1,7 @@
+import { randomUUID } from "node:crypto";
 import type {
+  ActorRecord,
   AppendResult,
-  ApprovalRepository,
   BankAccountRecord,
   BrokerPort,
   BrokerPosition,
@@ -10,6 +11,8 @@ import type {
   FundingPort,
   IdentityInquiryRecord,
   IdentityPort,
+  InboundEventRecord,
+  InboxEvent,
   KycStatus,
   LotAdjustment,
   ModelDefinition,
@@ -21,13 +24,17 @@ import type {
 } from "@corgi/application";
 import { hashPassword } from "@corgi/application";
 import {
+  FakeActorDirectory,
+  FakeApprovalRepository,
+  FakeCustodianFileRepository,
+  FakeReconciliationRepository,
+  FakeSettlementRepository,
   InMemoryPeriodReturnRepository,
   InMemoryPriceRepository,
   InMemoryValuationRepository,
 } from "@corgi/application/testing";
 import {
   type AppendableEntry,
-  type ApprovalRequest,
   type ClearingAccounts,
   type CustomerLedgerAccounts,
   type JournalEntry,
@@ -43,6 +50,19 @@ export const OLIVIA_ID = "6f1c9a1e-1b2c-4d3e-8f90-1234567890ab";
 export const NOAH_ID = "7a2d8b2f-2c3d-4e4f-9a01-234567890abc";
 export const MODEL_ID = "8b3e9c3a-3d4e-4f50-ab12-34567890abcd";
 export const BANK_ID = "9c4fad4b-4e5f-4061-bc23-4567890abcde";
+
+/** Two human operators (maker and checker) plus the read-only agent. */
+export const AVA_ID = "a1000000-0000-4000-8000-00000000000a";
+export const BEN_ID = "b2000000-0000-4000-8000-00000000000b";
+export const AGENT_ID = "c3000000-0000-4000-8000-00000000000c";
+export const SYSTEM_ID = "d4000000-0000-4000-8000-00000000000d";
+
+export const testActors: readonly ActorRecord[] = [
+  { id: AVA_ID, displayName: "Ava Operator", role: "ops", actorType: "human" },
+  { id: BEN_ID, displayName: "Ben Checker", role: "ops", actorType: "human" },
+  { id: AGENT_ID, displayName: "Corgi Agent", role: "agent", actorType: "agent" },
+  { id: SYSTEM_ID, displayName: "Corgi System", role: "system", actorType: "agent" },
+];
 
 export const SESSION_SECRET = "test-session-secret-that-is-at-least-32-chars";
 export const LIVE_FIRE_TOKEN = "test-live-fire-operator-token-0001";
@@ -85,7 +105,12 @@ export interface FakeState {
   models: ModelDefinition[];
   assignments: Map<string, PortfolioAssignment>;
   openOrders: OpenOrder[];
-  approvals: ApprovalRequest[];
+  orders: OrderRecord[];
+  approvals: FakeApprovalRepository;
+  settlements: FakeSettlementRepository;
+  custodianFiles: FakeCustodianFileRepository;
+  reconciliation: FakeReconciliationRepository;
+  events: InboundEventRecord[];
   submittedOrders: Array<{ symbol: string; notionalCents: bigint }>;
   deposits: Array<{ accessToken: string; amountCents: bigint }>;
   identityCalls: string[];
@@ -241,7 +266,12 @@ export async function defaultState(): Promise<FakeState> {
     ],
     assignments: new Map([[OLIVIA_ID, { customerId: OLIVIA_ID, modelId: MODEL_ID, brokerAccountId: "alpaca-acct-1", status: "open" }]]),
     openOrders: [],
-    approvals: [],
+    orders: [],
+    approvals: new FakeApprovalRepository(),
+    settlements: new FakeSettlementRepository(),
+    custodianFiles: new FakeCustodianFileRepository(),
+    reconciliation: new FakeReconciliationRepository(),
+    events: [],
     submittedOrders: [],
     deposits: [],
     identityCalls: [],
@@ -287,18 +317,18 @@ export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}
       // none
     },
   };
-  const approvals: ApprovalRepository = {
-    create: (request) => {
-      state.approvals.push(request);
-      return Promise.resolve();
-    },
-    listPending: () => Promise.resolve(state.approvals),
-  };
   let counter = 0;
+  const now = () => state.now;
+  // Inbox semantics the replay route relies on: same dedupe key → `duplicate`.
+  const receive = (event: InboxEvent): Promise<"inserted" | "duplicate"> => {
+    if (state.events.some((row) => row.dedupeKey === event.dedupeKey)) return Promise.resolve("duplicate");
+    state.events.push({ ...event, id: randomUUID(), attempts: [] });
+    return Promise.resolve("inserted");
+  };
 
   return {
     sessions: createSessionTokens({ secret: SESSION_SECRET, ttlSeconds: 3600 }),
-    clock: { now: () => state.now },
+    clock: { now },
     ids: { next: () => `00000000-0000-4000-8000-${String(++counter).padStart(12, "0")}` },
     environment: "sandbox",
     limits: { orderConfirmationThresholdCents: 100_000n, maximumDepositCents: 5_000_000n },
@@ -320,6 +350,10 @@ export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}
       },
       setKycStatus: (id, status: KycStatus, tradingBlocked) => {
         state.profiles = state.profiles.map((profile) => (profile.id === id ? { ...profile, kycStatus: status, tradingBlocked } : profile));
+        return Promise.resolve();
+      },
+      setTradingBlocked: (id, tradingBlocked) => {
+        state.profiles = state.profiles.map((profile) => (profile.id === id ? { ...profile, tradingBlocked } : profile));
         return Promise.resolve();
       },
     },
@@ -433,13 +467,26 @@ export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}
       },
     },
     orders: {
-      create: () => Promise.resolve(),
-      findByClientOrderId: (): Promise<OrderRecord | null> => Promise.resolve(null),
-      findByProviderOrderId: (): Promise<OrderRecord | null> => Promise.resolve(null),
+      create: (order) => {
+        state.orders.push({ ...order, cumulativeFilledUnitsMicro: 0n });
+        return Promise.resolve();
+      },
+      findById: (id) => Promise.resolve(state.orders.find((order) => order.id === id) ?? null),
+      findByClientOrderId: (clientOrderId) => Promise.resolve(state.orders.find((order) => order.clientOrderId === clientOrderId) ?? null),
+      findByProviderOrderId: (providerOrderId) => Promise.resolve(state.orders.find((order) => order.providerOrderId === providerOrderId) ?? null),
       recordFill: () => Promise.resolve(),
     },
     orderListing: { listOpenForCustomer: () => Promise.resolve(state.openOrders) },
-    approvals,
+    approvals: state.approvals,
+    actors: new FakeActorDirectory(testActors),
+    settlements: state.settlements,
+    custodianFiles: state.custodianFiles,
+    reconciliation: state.reconciliation,
+    events: {
+      list: (limit) => Promise.resolve([...state.events].reverse().slice(0, limit)),
+      findById: (id) => Promise.resolve(state.events.find((event) => event.id === id) ?? null),
+    },
+    inbox: { receive },
     identity: options.withIdentity === false ? null : identity,
     funding: options.withFunding === false ? null : funding,
     broker: options.withBroker === false ? null : broker,

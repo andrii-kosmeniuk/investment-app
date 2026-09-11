@@ -1,10 +1,14 @@
 import type {
+  ActorType,
   AppendableEntry,
+  ApprovalDecision,
   ApprovalRequest,
+  ApprovalStatus,
   ClearingAccounts,
   CustomerLedgerAccounts,
   JournalEntry,
   LotAvailability,
+  LotConsumption,
   OrderState,
   ReconBreak,
   TaxLot,
@@ -119,9 +123,42 @@ export interface ProviderEvent {
   readonly cursor?: string;
 }
 
+export interface ApprovalRequestRecord extends ApprovalRequest {
+  readonly createdAt: Date;
+}
+
+export interface ApprovalDecisionRecord extends ApprovalDecision {
+  readonly id: string;
+  readonly decidedAt: Date;
+}
+
 export interface ApprovalRepository {
   create(request: ApprovalRequest): Promise<void>;
-  listPending(): Promise<readonly ApprovalRequest[]>;
+  findById(id: string): Promise<ApprovalRequestRecord | null>;
+  /** Newest first; `status` narrows, `limit` caps. */
+  list(filter: { status?: ApprovalStatus; limit?: number }): Promise<readonly ApprovalRequestRecord[]>;
+  /**
+   * Appends the decision row and moves the request to the decided status in
+   * one unit. The database re-checks maker ≠ checker and human-only; a violation
+   * surfaces as an error here even if the caller skipped the domain check.
+   */
+  recordDecision(decision: ApprovalDecisionRecord): Promise<void>;
+  decisionFor(requestId: string): Promise<ApprovalDecisionRecord | null>;
+}
+
+export interface ActorRecord {
+  readonly id: string;
+  readonly displayName: string;
+  readonly actorType: ActorType;
+  readonly role: string;
+}
+
+export interface ActorDirectory {
+  findById(id: string): Promise<ActorRecord | null>;
+  /** Operators who may decide approvals. */
+  listHumans(): Promise<readonly ActorRecord[]>;
+  /** The single actor for a system role, e.g. `agent` (MCP) or `system` (automation). */
+  findByRole(role: string): Promise<ActorRecord | null>;
 }
 
 export type KycStatus = "not_started" | "pending" | "needs_review" | "approved" | "declined";
@@ -136,6 +173,7 @@ export interface CustomerRecord {
 export interface CustomerRepository {
   findById(id: string): Promise<CustomerRecord | null>;
   setKycStatus(id: string, status: KycStatus, tradingBlocked: boolean): Promise<void>;
+  setTradingBlocked(id: string, blocked: boolean): Promise<void>;
 }
 
 /** What the customer sees about themselves; never includes credentials. */
@@ -414,6 +452,7 @@ export interface OrderRepository {
     state: OrderState;
     requestedNotionalCents: bigint;
   }): Promise<void>;
+  findById(id: string): Promise<OrderRecord | null>;
   findByClientOrderId(clientOrderId: string): Promise<OrderRecord | null>;
   findByProviderOrderId(providerOrderId: string): Promise<OrderRecord | null>;
   recordFill(input: {
@@ -440,11 +479,115 @@ export interface LotAdjustment {
   readonly effectiveAt: Date;
 }
 
+export interface RecordedLotConsumption extends LotConsumption {
+  readonly id: string;
+  /** The sell entry that consumed the units; one entry consumes many lots. */
+  readonly sellEntryId: string;
+  readonly consumedAt: Date;
+}
+
 export interface TaxLotRepository {
   open(lot: TaxLot): Promise<void>;
   /** Open lots net of consumptions, with any corporate-action adjustments applied. */
   availableLots(customerId: string, symbol: string): Promise<readonly LotAvailability[]>;
   adjust(adjustment: LotAdjustment): Promise<void>;
+  consume(consumptions: readonly RecordedLotConsumption[]): Promise<void>;
+}
+
+/* ------------------------------------------------------------------ */
+/* Settlement, custodian files, reconciliation (ADR-0005)               */
+/* ------------------------------------------------------------------ */
+
+export interface SettlementRecord {
+  readonly id: string;
+  readonly orderId: string;
+  readonly fillExternalId: string;
+  readonly side: "buy" | "sell";
+  /** Cost of a buy or proceeds of a sell, always positive. */
+  readonly amountCents: bigint;
+  readonly tradeDate: string;
+  readonly contractualSettlementDate: string;
+  readonly status: "pending" | "settled";
+  readonly journalEntryId: string | null;
+}
+
+export interface SettlementRepository {
+  /** Idempotent on `fillExternalId`: a replayed fill records nothing new. */
+  record(settlement: SettlementRecord): Promise<void>;
+  listDue(onOrBefore: string): Promise<readonly SettlementRecord[]>;
+  listPending(): Promise<readonly SettlementRecord[]>;
+  markSettled(id: string, journalEntryId: string): Promise<void>;
+}
+
+export interface CustodianFileRecord {
+  readonly id: string;
+  readonly businessDate: string;
+  readonly kind: "combined";
+  readonly sha256: string;
+  readonly storagePath: string;
+  readonly content: string;
+  readonly source: string;
+  readonly receivedAt: Date;
+}
+
+export interface CustodianFileRepository {
+  save(file: CustodianFileRecord): Promise<void>;
+  findById(id: string): Promise<CustodianFileRecord | null>;
+  /** The newest file for a business date on or before `businessDate`. */
+  latestOnOrBefore(businessDate: string): Promise<CustodianFileRecord | null>;
+}
+
+export interface ReconRunRecord {
+  readonly id: string;
+  readonly businessDate: string;
+  readonly fileId: string;
+  readonly status: "running" | "completed" | "failed";
+  readonly ledgerSnapshotHash: string;
+  readonly startedAt: Date;
+  readonly finishedAt: Date | null;
+}
+
+export type ReconBreakStatus = "open" | "explained" | "resolved";
+
+export interface ReconBreakRecord extends ReconBreak {
+  readonly id: string;
+  readonly firstRunId: string;
+  readonly lastSeenRunId: string;
+  /** Business date of the first run that saw the break — the aging anchor. */
+  readonly firstSeenBusinessDate: string;
+  readonly brokerValue: bigint | null;
+  readonly status: ReconBreakStatus;
+  readonly resolutionEntryId: string | null;
+  readonly resolutionNote: string | null;
+  readonly resolvedByActorId: string | null;
+  readonly resolvedAt: Date | null;
+  readonly createdAt: Date;
+}
+
+export interface ReconSighting extends ReconBreak {
+  readonly brokerValue: bigint | null;
+}
+
+export interface ReconciliationRepository {
+  createRun(run: ReconRunRecord): Promise<void>;
+  finishRun(id: string, status: "completed" | "failed", finishedAt: Date): Promise<void>;
+  listRuns(limit: number): Promise<readonly ReconRunRecord[]>;
+  /**
+   * Records what a run saw: a break already open for the same
+   * (customer, category, key) gets `lastSeenRunId` and fresh values; anything
+   * else opens a new break anchored to this run.
+   */
+  recordSightings(run: ReconRunRecord, sightings: readonly ReconSighting[]): Promise<{ opened: number; refreshed: number }>;
+  listBreaks(filter: { status?: ReconBreakStatus; limit?: number }): Promise<readonly ReconBreakRecord[]>;
+  findBreak(id: string): Promise<ReconBreakRecord | null>;
+  closeBreak(input: {
+    id: string;
+    status: "explained" | "resolved";
+    note: string;
+    actorId: string;
+    entryId: string | null;
+    at: Date;
+  }): Promise<void>;
 }
 
 /**
@@ -457,8 +600,22 @@ export interface AccountResolver {
   clearing(symbols: readonly string[]): Promise<ClearingAccounts>;
 }
 
-export interface ReconciliationRepository {
-  saveBreaks(breaks: readonly ReconBreak[]): Promise<void>;
+export interface InboundEventRecord {
+  readonly id: string;
+  readonly provider: InboxEvent["provider"];
+  readonly externalId: string;
+  readonly dedupeKey: string;
+  readonly type: string;
+  readonly payload: unknown;
+  readonly signatureValid: boolean;
+  readonly receivedAt: Date;
+  readonly attempts: readonly { readonly status: "processed" | "failed"; readonly error: string | null; readonly at: Date }[];
+}
+
+/** Operator view over the inbox: what arrived, whether it was applied, and replay. */
+export interface InboundEventLog {
+  list(limit: number): Promise<readonly InboundEventRecord[]>;
+  findById(id: string): Promise<InboundEventRecord | null>;
 }
 
 export interface Clock {

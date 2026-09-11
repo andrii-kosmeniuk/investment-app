@@ -38,4 +38,8 @@ export class DrizzleCustomerRepository implements CustomerRepository {
       .set({ kycStatus: status, tradingBlocked })
       .where(eq(customers.id, id));
   }
+
+  async setTradingBlocked(id: string, blocked: boolean): Promise<void> {
+    await this.db.update(customers).set({ tradingBlocked: blocked }).where(eq(customers.id, id));
+  }
 }

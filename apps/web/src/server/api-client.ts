@@ -1,8 +1,18 @@
 import {
   type ActivityResponse,
+  type AdjustBreakRequest,
+  type ApprovalResponse,
+  type ApprovalStatus,
+  type ApprovalsResponse,
   type CollectClosesRequest,
   type ConfirmationRequiredResponse,
   type CorrectedCloseRequest,
+  type DecideApprovalRequest,
+  type DecideApprovalResponse,
+  type ExplainBreakRequest,
+  type FiledApprovalResponse,
+  type GenerateCustodianFileRequest,
+  type InboundEventsResponse,
   type InvestmentResponse,
   type LateDividendRequest,
   type LinkTokenResponse,
@@ -10,8 +20,16 @@ import {
   type MeResponse,
   type ModelsResponse,
   type OnboardingResponse,
+  type OperatorsResponse,
+  type OpsOverviewResponse,
   type PortfolioResponse,
+  type ProposeRebalanceRequest,
+  type ReconciliationResponse,
+  type ReleaseTradingBlockResponse,
+  type ReplayEventResponse,
+  type RequestWithdrawalRequest,
   type RestatementsResponse,
+  type RunReconciliationRequest,
   type RunValuationRequest,
   type SessionResponse,
   type StatementResponse,
@@ -20,14 +38,24 @@ import {
   type VerificationSessionResponse,
   activityResponse,
   apiError,
+  approvalResponse,
+  approvalsResponse,
   confirmationRequiredResponse,
+  decideApprovalResponse,
+  filedApprovalResponse,
+  inboundEventsResponse,
   investmentResponse,
   linkTokenResponse,
   liveFireResponse,
   meResponse,
   modelsResponse,
   onboardingResponse,
+  operatorsResponse,
+  opsOverviewResponse,
   portfolioResponse,
+  reconciliationResponse,
+  releaseTradingBlockResponse,
+  replayEventResponse,
   restatementsResponse,
   sessionResponse,
   statementResponse,
@@ -80,6 +108,8 @@ export class ApiClientError extends Error {
 export interface ApiClientOptions {
   readonly baseUrl: string;
   readonly token?: string | null;
+  /** Which human operator is acting; sent as `X-Operator-Id` on ops calls (ADR-0005). */
+  readonly operatorId?: string | null;
   readonly fetch?: typeof fetch;
 }
 
@@ -96,6 +126,7 @@ export function createApiClient(options: ApiClientOptions) {
     const headers: Record<string, string> = { accept: "application/json" };
     if (body !== undefined) headers["content-type"] = "application/json";
     if (options.token) headers.authorization = `Bearer ${options.token}`;
+    if (options.operatorId) headers["x-operator-id"] = options.operatorId;
 
     let response: Response;
     try {
@@ -161,6 +192,33 @@ export function createApiClient(options: ApiClientOptions) {
       call("POST", "/v1/ops/live-fire/run-valuation", liveFireResponse, input),
     collectCloses: (input: CollectClosesRequest): Promise<LiveFireResponse> =>
       call("POST", "/v1/ops/live-fire/collect-closes", liveFireResponse, input),
+
+    // Operations console (ADR-0005). Writes need `operatorId` set on the client.
+    operators: (): Promise<OperatorsResponse> => call("GET", "/v1/ops/operators", operatorsResponse),
+    overview: (): Promise<OpsOverviewResponse> => call("GET", "/v1/ops/overview", opsOverviewResponse),
+    approvals: (status?: ApprovalStatus | null): Promise<ApprovalsResponse> =>
+      call("GET", status ? `/v1/ops/approvals?status=${status}` : "/v1/ops/approvals", approvalsResponse),
+    decideApproval: (id: string, input: DecideApprovalRequest): Promise<DecideApprovalResponse> =>
+      call("POST", `/v1/ops/approvals/${encodeURIComponent(id)}/decide`, decideApprovalResponse, input),
+    proposeRebalance: (input: ProposeRebalanceRequest): Promise<FiledApprovalResponse> =>
+      call("POST", "/v1/ops/approvals/propose-rebalance", filedApprovalResponse, input),
+    requestWithdrawal: (input: RequestWithdrawalRequest): Promise<FiledApprovalResponse> =>
+      call("POST", "/v1/ops/approvals/request-withdrawal", filedApprovalResponse, input),
+    reconciliation: (): Promise<ReconciliationResponse> => call("GET", "/v1/ops/reconciliation", reconciliationResponse),
+    custodianFile: (input: GenerateCustodianFileRequest): Promise<LiveFireResponse> =>
+      call("POST", "/v1/ops/custodian-file", liveFireResponse, input),
+    runReconciliation: (input: RunReconciliationRequest): Promise<LiveFireResponse> =>
+      call("POST", "/v1/ops/reconciliation/run", liveFireResponse, input),
+    explainBreak: (id: string, input: ExplainBreakRequest) =>
+      call("POST", `/v1/ops/reconciliation/breaks/${encodeURIComponent(id)}/explain`, z.object({ id: z.string(), status: z.string() }), input),
+    adjustBreak: (id: string, input: AdjustBreakRequest): Promise<ApprovalResponse> =>
+      call("POST", `/v1/ops/reconciliation/breaks/${encodeURIComponent(id)}/adjust`, approvalResponse, input),
+    events: (limit = 100): Promise<InboundEventsResponse> => call("GET", `/v1/ops/events?limit=${limit}`, inboundEventsResponse),
+    replayEvent: (id: string): Promise<ReplayEventResponse> =>
+      call("POST", `/v1/ops/events/${encodeURIComponent(id)}/replay`, replayEventResponse, {}),
+    settleTrades: (): Promise<LiveFireResponse> => call("POST", "/v1/ops/live-fire/settle-trades", liveFireResponse, {}),
+    releaseTradingBlock: (customerId: string): Promise<ReleaseTradingBlockResponse> =>
+      call("POST", `/v1/ops/customers/${encodeURIComponent(customerId)}/release-trading-block`, releaseTradingBlockResponse, {}),
   };
 }
 

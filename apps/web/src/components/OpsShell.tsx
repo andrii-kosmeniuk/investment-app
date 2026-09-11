@@ -3,6 +3,9 @@ import type { ReactNode } from "react";
 
 export const OPS_NAV = [
   { href: "/ops", label: "Overview" },
+  { href: "/ops/approvals", label: "Approvals" },
+  { href: "/ops/reconciliation", label: "Reconciliation" },
+  { href: "/ops/events", label: "Events" },
   { href: "/ops/restatements", label: "Restatements" },
   { href: "/ops/live-fire", label: "Live fire" },
 ] as const;

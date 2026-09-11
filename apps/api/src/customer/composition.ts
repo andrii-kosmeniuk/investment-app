@@ -1,12 +1,15 @@
-import type { ApprovalRepository } from "@corgi/application";
-import type { ApprovalRequest } from "@corgi/domain";
 import {
   DrizzleAccountResolver,
+  DrizzleActorDirectory,
+  DrizzleApprovalRepository,
   DrizzleBankAccountRepository,
   DrizzleCredentialsRepository,
+  DrizzleCustodianFileRepository,
   DrizzleCustomerDirectory,
   DrizzleCustomerRepository,
   DrizzleIdentityInquiryRepository,
+  DrizzleInboundEventLog,
+  DrizzleInboxRepository,
   DrizzleLedgerAccountDirectory,
   DrizzleLedgerRepository,
   DrizzleModelCatalog,
@@ -15,11 +18,12 @@ import {
   DrizzlePeriodReturnRepository,
   DrizzlePortfolioAssignmentRepository,
   DrizzlePriceRepository,
+  DrizzleReconciliationRepository,
+  DrizzleSettlementRepository,
   DrizzleTaxLotRepository,
   DrizzleTransferRepository,
   DrizzleValuationRepository,
   type TransactionalDatabase,
-  approvalRequests,
 } from "@corgi/database";
 import {
   AlpacaBrokerAdapter,
@@ -27,43 +31,9 @@ import {
   PersonaIdentityAdapter,
   PlaidFundingAdapter,
 } from "@corgi/integrations";
-import { eq } from "drizzle-orm";
 import { createSessionTokens } from "../auth/session.js";
 import type { ApiConfig } from "../config.js";
 import type { CustomerServices } from "./services.js";
-
-/** Approval requests filed by customers whose orders cross the confirmation threshold. */
-class DrizzleApprovalRepository implements ApprovalRepository {
-  constructor(private readonly db: TransactionalDatabase) {}
-
-  async create(request: ApprovalRequest): Promise<void> {
-    await this.db.insert(approvalRequests).values({
-      id: request.id,
-      kind: request.kind,
-      amountCents: request.amountCents,
-      payload: request.payload,
-      requestedByActorId: request.requestedByActorId,
-      requestedByActorType: request.requestedByActorType,
-      status: request.status,
-    });
-  }
-
-  async listPending(): Promise<readonly ApprovalRequest[]> {
-    const rows = await this.db
-      .select()
-      .from(approvalRequests)
-      .where(eq(approvalRequests.status, "pending"));
-    return rows.map((row) => ({
-      id: row.id,
-      kind: row.kind as ApprovalRequest["kind"],
-      amountCents: row.amountCents,
-      payload: (row.payload ?? {}) as Readonly<Record<string, unknown>>,
-      requestedByActorId: row.requestedByActorId,
-      requestedByActorType: row.requestedByActorType,
-      status: row.status,
-    }));
-  }
-}
 
 export function createCustomerServices(db: TransactionalDatabase, config: ApiConfig): CustomerServices {
   return {
@@ -93,6 +63,12 @@ export function createCustomerServices(db: TransactionalDatabase, config: ApiCon
     orders: new DrizzleOrderRepository(db),
     orderListing: new DrizzleOrderListing(db),
     approvals: new DrizzleApprovalRepository(db),
+    actors: new DrizzleActorDirectory(db),
+    settlements: new DrizzleSettlementRepository(db),
+    custodianFiles: new DrizzleCustodianFileRepository(db),
+    reconciliation: new DrizzleReconciliationRepository(db),
+    events: new DrizzleInboundEventLog(db),
+    inbox: new DrizzleInboxRepository(db),
     identity:
       config.PERSONA_API_KEY && config.PERSONA_TEMPLATE_ID
         ? new PersonaIdentityAdapter({

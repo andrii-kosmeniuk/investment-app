@@ -41,6 +41,13 @@ export function isWeekend(date: string): boolean {
   return weekday === 0 || weekday === 6;
 }
 
+/** The last weekday strictly before `date` (holidays are out of scope; see CUT_LIST). */
+export function previousBusinessDay(date: string): string {
+  let candidate = addDays(date, -1);
+  while (isWeekend(candidate)) candidate = addDays(candidate, -1);
+  return candidate;
+}
+
 function wallClockParts(instant: Date, timeZone: string): Record<string, number> {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,

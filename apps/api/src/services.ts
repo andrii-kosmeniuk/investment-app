@@ -1,20 +1,12 @@
+import { proposeRebalanceForCustomer, requestWithdrawal } from "@corgi/application";
 import type { Database } from "@corgi/database";
-import {
-  actors,
-  approvalRequests,
-  inboundEvents,
-  journalEntries,
-  ledgerAccounts,
-  postings,
-  reconBreaks,
-  taxLots,
-  valuations,
-} from "@corgi/database";
+import { inboundEvents, journalEntries, ledgerAccounts, postings, taxLots, valuations } from "@corgi/database";
 import { endOfBusinessDay } from "@corgi/domain";
 import { and, desc, eq, gte, lte } from "drizzle-orm";
 import type { AgentReadService, AgentWriteService } from "@corgi/mcp";
 import { loadPerformance } from "./customer/read-models.js";
 import type { CustomerServices } from "./customer/services.js";
+import { loadReconciliation } from "./ops/read-models.js";
 
 export interface ApiServices {
   readonly database: Database;
@@ -36,12 +28,8 @@ export interface ApiServices {
 
 export function createServices(database: Database, customer: CustomerServices): ApiServices {
   const agentActor = async () => {
-    const [actor] = await database
-      .select({ id: actors.id })
-      .from(actors)
-      .where(and(eq(actors.actorType, "agent"), eq(actors.role, "agent")))
-      .limit(1);
-    if (!actor) throw new Error("Seed an agent actor before using MCP writes");
+    const actor = await customer.actors.findByRole("agent");
+    if (!actor || actor.actorType !== "agent") throw new Error("Seed an agent actor before using MCP writes");
     return actor;
   };
 
@@ -108,44 +96,24 @@ export function createServices(database: Database, customer: CustomerServices): 
       async listTaxLots(customerId) {
         return database.select().from(taxLots).where(eq(taxLots.customerId, customerId));
       },
+      // Same rows the ops recon screen shows, aging included (ADR-0005).
       async getReconciliationBreaks(status) {
-        return database
-          .select()
-          .from(reconBreaks)
-          .where(status ? eq(reconBreaks.status, status) : undefined)
-          .orderBy(reconBreaks.createdAt);
+        const view = await loadReconciliation(customer);
+        return { today: view.today, latestRun: view.latestRun, breaks: view.breaks.filter((brk) => !status || brk.status === status) };
       },
     },
+    // Agent writes run the same use-cases the operator console uses; the only
+    // difference the checker sees is the `agent` tag on the request.
     agentWrites: {
       async proposeRebalance(customerId, reason) {
-        const actor = await agentActor();
-        const [request] = await database
-          .insert(approvalRequests)
-          .values({
-            kind: "rebalance",
-            amountCents: 0n,
-            payload: { customerId, reason },
-            requestedByActorId: actor.id,
-            requestedByActorType: "agent",
-          })
-          .returning({ id: approvalRequests.id });
-        if (!request) throw new Error("Failed to create approval request");
-        return { approvalId: request.id };
+        const result = await proposeRebalanceForCustomer(customer, { customerId, reason, requestedBy: await agentActor() });
+        return result.status === "filed"
+          ? { status: "filed", approvalId: result.request.id, legs: result.legs.map((leg) => ({ symbol: leg.symbol, side: leg.side, notionalCents: leg.notionalCents.toString() })) }
+          : { status: "in_balance", approvalId: null, legs: [] };
       },
       async requestWithdrawal(customerId, amountCents, reason) {
-        const actor = await agentActor();
-        const [request] = await database
-          .insert(approvalRequests)
-          .values({
-            kind: "withdrawal",
-            amountCents,
-            payload: { customerId, reason },
-            requestedByActorId: actor.id,
-            requestedByActorType: "agent",
-          })
-          .returning({ id: approvalRequests.id });
-        if (!request) throw new Error("Failed to create approval request");
-        return { approvalId: request.id };
+        const filed = await requestWithdrawal(customer, { customerId, amountCents, reason, requestedBy: await agentActor() });
+        return { approvalId: filed.id };
       },
     },
   };

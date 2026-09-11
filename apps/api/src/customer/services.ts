@@ -1,16 +1,20 @@
 import type {
   AccountResolver,
+  ActorDirectory,
   ApprovalRepository,
   BankAccountRepository,
   BrokerPort,
   Clock,
   CredentialsRepository,
+  CustodianFileRepository,
   CustomerDirectory,
   CustomerRepository,
   FundingPort,
   IdGenerator,
   IdentityInquiryRepository,
   IdentityPort,
+  InboundEventLog,
+  InboxRepository,
   LedgerAccountDirectory,
   LedgerRepository,
   MarketDataPort,
@@ -21,6 +25,8 @@ import type {
   PeriodReturnRepository,
   PortfolioAssignmentRepository,
   PriceRepository,
+  ReconciliationRepository,
+  SettlementRepository,
   TaxLotRepository,
   TransferRepository,
   ValuationRepository,
@@ -60,6 +66,13 @@ export interface CustomerServices {
   readonly orders: OrderRepository;
   readonly orderListing: OrderListing;
   readonly approvals: ApprovalRepository;
+  readonly actors: ActorDirectory;
+  readonly settlements: SettlementRepository;
+  readonly custodianFiles: CustodianFileRepository;
+  readonly reconciliation: ReconciliationRepository;
+  readonly events: InboundEventLog;
+  /** Ingress side of the inbox, used by the ops replay button (ADR-0005). */
+  readonly inbox: Pick<InboxRepository, "receive">;
   readonly identity: IdentityPort | null;
   readonly funding: FundingPort | null;
   readonly broker: BrokerPort | null;

@@ -7,8 +7,8 @@
     ".": { "types": "./src/index.ts", "default": "./dist/index.js" },
     "./ports": { "types": "./src/ports.ts", "default": "./dist/ports.js" },
     "./testing": {
-      "types": "./src/testing/in-memory-valuation.ts",
-      "default": "./dist/testing/in-memory-valuation.js"
+      "types": "./src/testing/index.ts",
+      "default": "./dist/testing/index.js"
     }
   },
   "scripts": {

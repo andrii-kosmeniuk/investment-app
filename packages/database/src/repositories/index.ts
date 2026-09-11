@@ -8,3 +8,4 @@ export * from "./tax-lot.js";
 export * from "./funding.js";
 export * from "./portfolio.js";
 export * from "./valuation.js";
+export * from "./operations.js";

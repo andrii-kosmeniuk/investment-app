@@ -1,14 +1,20 @@
 import {
   type AccountResolver,
+  type ActorDirectory,
+  type ApprovalRepository,
   type Clock,
   type CustomerRepository,
   type IdGenerator,
   type InboxHandler,
+  type LedgerAccountDirectory,
   type LedgerRepository,
   type OrderRepository,
+  type PriceRepository,
+  type SettlementRepository,
   type TaxLotRepository,
   applyFill,
   applyInquiryStatus,
+  handleDepositReturn,
   recordTransferEvent,
 } from "@corgi/application";
 import {
@@ -46,6 +52,13 @@ export interface HandlerDeps {
   readonly taxLots: TaxLotRepository;
   readonly transfers: TransferLookup;
   readonly customers: CustomerRepository;
+  /** Fills also open the T+1 settlement row the 00:05 job later closes. */
+  readonly settlements: SettlementRepository;
+  /** A bounced deposit after investing blocks trading and files a sell-to-cover approval. */
+  readonly approvals: ApprovalRepository;
+  readonly actors: ActorDirectory;
+  readonly accounts: LedgerAccountDirectory;
+  readonly prices: PriceRepository;
 }
 
 /**
@@ -60,7 +73,7 @@ export function buildProviderHandlers(deps: HandlerDeps): Map<string, InboxHandl
     const parsed = parseAlpacaFillEvent(event.payload);
     if (!parsed) throw new Error(`unparseable Alpaca fill: ${event.dedupeKey}`);
     await applyFill(
-      { ...ledgerDeps, resolver: deps.resolver, orders: deps.orders, taxLots: deps.taxLots },
+      { ...ledgerDeps, resolver: deps.resolver, orders: deps.orders, taxLots: deps.taxLots, settlements: deps.settlements },
       parsed,
     );
   };
@@ -70,17 +83,19 @@ export function buildProviderHandlers(deps: HandlerDeps): Map<string, InboxHandl
     if (!note) throw new Error(`unparseable Plaid transfer: ${event.dedupeKey}`);
     const record = await deps.transfers.findByProviderId(note.transferId);
     if (!record) throw new Error(`unknown transfer: ${note.transferId}`);
-    await recordTransferEvent(
-      { ...ledgerDeps, resolver: deps.resolver },
-      {
-        customerId: record.customerId,
-        transferId: note.transferId,
-        kind: note.kind,
-        amountCents: record.amountCents,
-        occurredAt: note.occurredAt,
-        ...(note.returnCode ? { returnCode: note.returnCode } : {}),
-      },
-    );
+    const transferEvent = {
+      customerId: record.customerId,
+      transferId: note.transferId,
+      kind: note.kind,
+      amountCents: record.amountCents,
+      occurredAt: note.occurredAt,
+      ...(note.returnCode ? { returnCode: note.returnCode } : {}),
+    };
+    if (note.kind === "returned") {
+      await handleDepositReturn({ ...ledgerDeps, ...deps }, transferEvent);
+      return;
+    }
+    await recordTransferEvent({ ...ledgerDeps, resolver: deps.resolver }, transferEvent);
   };
 
   const kyc: InboxHandler = async (event) => {

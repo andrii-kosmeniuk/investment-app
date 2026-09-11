@@ -1,18 +1,34 @@
 import {
   type AppendableEntry,
   type ApprovalRequest,
+  type ApprovalStatus,
   type ClearingAccounts,
   type CustomerLedgerAccounts,
   type JournalEntry,
   type LotAvailability,
   type TaxLot,
+  cents,
   microUnits,
   sealNext,
 } from "@corgi/domain";
 import type {
   AccountResolver,
+  ActorDirectory,
+  ActorRecord,
   AppendResult,
+  ApprovalDecisionRecord,
   ApprovalRepository,
+  ApprovalRequestRecord,
+  CustodianFileRecord,
+  CustodianFileRepository,
+  ReconBreakRecord,
+  ReconBreakStatus,
+  ReconRunRecord,
+  ReconSighting,
+  ReconciliationRepository,
+  RecordedLotConsumption,
+  SettlementRecord,
+  SettlementRepository,
   BrokerPort,
   BrokerPosition,
   Clock,
@@ -22,6 +38,7 @@ import type {
   InboxEvent,
   InboxRepository,
   KycStatus,
+  LedgerAccountDirectory,
   LedgerRepository,
   LotAdjustment,
   OrderRecord,
@@ -29,6 +46,14 @@ import type {
   ProviderEvent,
   TaxLotRepository,
 } from "../src/index.js";
+
+export {
+  FakeActorDirectory,
+  FakeApprovalRepository,
+  FakeCustodianFileRepository,
+  FakeReconciliationRepository,
+  FakeSettlementRepository,
+} from "../src/testing/index.js";
 
 /**
  * Single-threaded, in-memory stand-in for the real Drizzle ledger. It applies
@@ -72,6 +97,24 @@ export class InMemoryLedgerRepository implements LedgerRepository {
   get all(): readonly JournalEntry[] {
     return this.entries;
   }
+}
+
+/** Directory over the in-memory ledger: positions are whatever `:pos:` accounts have postings. */
+export function directoryOver(ledger: InMemoryLedgerRepository): LedgerAccountDirectory {
+  const positionAccounts = () =>
+    ledger.all.flatMap((entry) => entry.postings.map((p) => p.accountId)).filter((id) => id.includes(":pos:"));
+  return {
+    pathsById: (ids) => Promise.resolve(new Map(ids.map((id) => [id, id]))),
+    positionSymbols: (customerId) =>
+      Promise.resolve(
+        [...new Set(positionAccounts().filter((id) => id.startsWith(`${customerId}:pos:`)).map((id) => id.split(":pos:")[1]!))].sort(),
+      ),
+    allPositionSymbols: () => Promise.resolve([...new Set(positionAccounts().map((id) => id.split(":pos:")[1]!))].sort()),
+    customersWithAccounts: () =>
+      Promise.resolve([...new Set(ledger.all.flatMap((e) => e.postings.map((p) => p.accountId.split(":")[0]!)))].filter((c) => c.startsWith("cust"))),
+    customersHolding: (symbol) =>
+      Promise.resolve([...new Set(positionAccounts().filter((id) => id.endsWith(`:pos:${symbol}`)).map((id) => id.split(":")[0]!))]),
+  };
 }
 
 export class InMemoryInboxRepository implements InboxRepository {
@@ -161,6 +204,13 @@ export class FakeCustomerRepository implements CustomerRepository {
     return Promise.resolve();
   }
 
+  setTradingBlocked(id: string, blocked: boolean): Promise<void> {
+    const existing = this.customers.get(id);
+    if (!existing) throw new Error(`unknown customer ${id}`);
+    this.customers.set(id, { ...existing, tradingBlocked: blocked });
+    return Promise.resolve();
+  }
+
   snapshot(id: string): CustomerRecord | undefined {
     return this.customers.get(id);
   }
@@ -200,6 +250,10 @@ export class FakeOrderRepository implements OrderRepository {
     if (record.providerOrderId) this.byProviderId.set(record.providerOrderId, record);
   }
 
+  findById(id: string): Promise<OrderRecord | null> {
+    return Promise.resolve([...this.byClientId.values()].find((record) => record.id === id) ?? null);
+  }
+
   findByClientOrderId(clientOrderId: string): Promise<OrderRecord | null> {
     return Promise.resolve(this.byClientId.get(clientOrderId) ?? null);
   }
@@ -234,6 +288,7 @@ export class FakeOrderRepository implements OrderRepository {
 export class FakeTaxLotRepository implements TaxLotRepository {
   readonly lots: TaxLot[] = [];
   readonly adjustments: LotAdjustment[] = [];
+  readonly consumptions: RecordedLotConsumption[] = [];
 
   open(lot: TaxLot): Promise<void> {
     this.lots.push(lot);
@@ -247,8 +302,16 @@ export class FakeTaxLotRepository implements TaxLotRepository {
         .map((lot) => {
           const adjusted = this.adjustments.filter((a) => a.lotId === lot.id).at(-1);
           const units = adjusted ? microUnits(adjusted.unitsAfter) : lot.units;
-          return { lot: { ...lot, units }, remainingUnits: units, remainingBasis: lot.basis };
-        }),
+          const consumed = this.consumptions.filter((c) => c.lotId === lot.id);
+          const consumedUnits = consumed.reduce((sum, c) => sum + c.units, 0n);
+          const consumedBasis = consumed.reduce((sum, c) => sum + c.basis, 0n);
+          return {
+            lot: { ...lot, units },
+            remainingUnits: microUnits(units - consumedUnits),
+            remainingBasis: cents(lot.basis - consumedBasis),
+          };
+        })
+        .filter((availability) => availability.remainingUnits > 0n),
     );
   }
 
@@ -256,18 +319,10 @@ export class FakeTaxLotRepository implements TaxLotRepository {
     this.adjustments.push(adjustment);
     return Promise.resolve();
   }
-}
 
-export class FakeApprovalRepository implements ApprovalRepository {
-  readonly requests: ApprovalRequest[] = [];
-
-  create(request: ApprovalRequest): Promise<void> {
-    this.requests.push(request);
+  consume(consumptions: readonly RecordedLotConsumption[]): Promise<void> {
+    this.consumptions.push(...consumptions);
     return Promise.resolve();
-  }
-
-  listPending(): Promise<readonly ApprovalRequest[]> {
-    return Promise.resolve(this.requests.filter((request) => request.status === "pending"));
   }
 }
 

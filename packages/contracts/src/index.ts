@@ -353,7 +353,7 @@ export const restatementSummary = z.object({
 });
 
 export const liveFireResponse = z.object({
-  action: z.enum(["corrected_close", "late_dividend", "stock_split", "run_valuation", "collect_closes"]),
+  action: z.enum(["corrected_close", "late_dividend", "stock_split", "run_valuation", "collect_closes", "custodian_file", "reconcile", "settle_trades"]),
   summary: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
   restatements: z.array(restatementSummary),
 });
@@ -373,40 +373,149 @@ export const restatementAuditRow = z.object({
 export const restatementsResponse = z.object({ rows: z.array(restatementAuditRow) });
 
 /* ------------------------------------------------------------------ */
-/* Operations (unchanged from the earlier block)                       */
+/* Operations — approvals, reconciliation, events (ADR-0005)            */
 /* ------------------------------------------------------------------ */
+
+export const actorType = z.enum(["human", "agent"]);
+export const approvalKind = z.enum(["withdrawal", "order", "rebalance", "recon_adjustment"]);
+export const approvalStatus = z.enum(["pending", "approved", "rejected", "cancelled"]);
+export const reconCategory = z.enum(["position_units", "cash", "missing_transaction", "unexpected_transaction", "price"]);
+export const reconBreakStatus = z.enum(["open", "explained", "resolved"]);
+export const agingBucket = z.enum(["0-1d", "2-3d", "4d+"]);
+
+export const operatorResponse = z.object({ id: z.string().uuid(), displayName: z.string(), role: z.string() });
+export const operatorsResponse = z.object({ operators: z.array(operatorResponse) });
+
+export const actorSummary = z.object({ id: z.string().uuid(), displayName: z.string(), actorType });
+
+export const approvalDecisionResponse = z.object({
+  decidedBy: actorSummary,
+  decision: z.enum(["approved", "rejected"]),
+  reason: z.string(),
+  decidedAt: isoTimestamp,
+});
 
 export const approvalResponse = z.object({
   id: z.string().uuid(),
-  kind: z.enum(["withdrawal", "order", "rebalance", "recon_adjustment"]),
+  kind: approvalKind,
   amountCents: integerString,
-  requestedBy: z.object({
-    id: z.string().uuid(),
-    displayName: z.string(),
-    actorType: z.enum(["human", "agent"]),
-  }),
-  status: z.enum(["pending", "approved", "rejected", "cancelled"]),
+  payload: z.record(z.string(), z.unknown()),
+  requestedBy: actorSummary,
+  status: approvalStatus,
   createdAt: isoTimestamp,
+  decision: approvalDecisionResponse.nullable(),
+});
+
+export const approvalsResponse = z.object({ rows: z.array(approvalResponse) });
+
+export const decideApprovalRequest = z.object({
+  decision: z.enum(["approved", "rejected"]),
+  reason: z.string().trim().min(3).max(500),
+});
+
+export const decideApprovalResponse = z.object({
+  request: approvalResponse,
+  outcome: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).nullable(),
+});
+
+export const proposeRebalanceRequest = z.object({ customerId: z.string().uuid(), reason: z.string().trim().min(3).max(500) });
+export const requestWithdrawalRequest = z.object({
+  customerId: z.string().uuid(),
+  amountCents: positiveIntegerString,
+  reason: z.string().trim().min(3).max(500),
+});
+export const filedApprovalResponse = z.object({
+  status: z.enum(["filed", "in_balance"]),
+  approvalId: z.string().uuid().nullable(),
+  legs: z.array(z.object({ symbol: z.string(), side: z.enum(["buy", "sell"]), notionalCents: integerString })),
 });
 
 export const reconciliationBreakResponse = z.object({
   id: z.string().uuid(),
   customerId: z.string().uuid(),
-  category: z.enum([
-    "position_units",
-    "cash",
-    "missing_transaction",
-    "unexpected_transaction",
-    "price",
-  ]),
+  category: reconCategory,
   key: z.string(),
-  ledgerValue: z.string(),
-  custodianValue: z.string(),
-  brokerValue: z.string().nullable(),
-  delta: z.string(),
+  ledgerValue: integerString,
+  custodianValue: integerString,
+  brokerValue: integerString.nullable(),
+  delta: integerString,
+  firstSeenBusinessDate: isoDate,
   ageDays: z.number().int().nonnegative(),
-  status: z.enum(["open", "explained", "resolved"]),
+  agingBucket,
+  status: reconBreakStatus,
+  resolutionNote: z.string().nullable(),
+  resolutionEntryId: z.string().uuid().nullable(),
+  resolvedBy: actorSummary.nullable(),
+  resolvedAt: isoTimestamp.nullable(),
 });
+
+export const reconRunResponse = z.object({
+  id: z.string().uuid(),
+  businessDate: isoDate,
+  fileId: z.string().uuid(),
+  fileBusinessDate: isoDate.nullable(),
+  fileSource: z.string().nullable(),
+  status: z.enum(["running", "completed", "failed"]),
+  startedAt: isoTimestamp,
+  finishedAt: isoTimestamp.nullable(),
+});
+
+export const reconciliationResponse = z.object({
+  today: isoDate,
+  latestRun: reconRunResponse.nullable(),
+  runs: z.array(reconRunResponse),
+  breaks: z.array(reconciliationBreakResponse),
+  openByBucket: z.record(agingBucket, z.number().int().nonnegative()),
+});
+
+export const custodianTamperRequest = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("position"), customerId: z.string().uuid(), symbol: z.string().min(1).max(12).toUpperCase(), deltaUnitsMicro: integerString }),
+  z.object({ kind: z.literal("cash"), customerId: z.string().uuid(), deltaCents: integerString }),
+  z.object({ kind: z.literal("drop_transaction"), customerId: z.string().uuid(), entryId: z.string().uuid() }),
+]);
+
+export const generateCustodianFileRequest = z.object({
+  businessDate: isoDate,
+  tamper: custodianTamperRequest.optional(),
+});
+
+export const runReconciliationRequest = z.object({ businessDate: isoDate });
+
+export const explainBreakRequest = z.object({ note: z.string().trim().min(3).max(500) });
+export const adjustBreakRequest = z.object({ note: z.string().trim().min(3).max(500) });
+
+export const inboundEventResponse = z.object({
+  id: z.string().uuid(),
+  provider: z.enum(["alpaca", "plaid", "persona", "custodian"]),
+  externalId: z.string(),
+  dedupeKey: z.string(),
+  type: z.string(),
+  signatureValid: z.boolean(),
+  receivedAt: isoTimestamp,
+  outcome: z.enum(["processed", "failed", "pending"]),
+  attempts: z.array(z.object({ status: z.enum(["processed", "failed"]), error: z.string().nullable(), at: isoTimestamp })),
+});
+export const inboundEventsResponse = z.object({ rows: z.array(inboundEventResponse) });
+export const replayEventResponse = z.object({
+  eventId: z.string().uuid(),
+  dedupeKey: z.string(),
+  receive: z.enum(["inserted", "duplicate"]),
+});
+
+export const opsOverviewResponse = z.object({
+  now: isoTimestamp,
+  pendingApprovals: z.number().int().nonnegative(),
+  openBreaks: z.number().int().nonnegative(),
+  oldestOpenBreakDays: z.number().int().nonnegative().nullable(),
+  latestRun: reconRunResponse.nullable(),
+  eventsToday: z.number().int().nonnegative(),
+  failedEvents: z.number().int().nonnegative(),
+  pendingSettlements: z.number().int().nonnegative(),
+  providers: z.array(z.object({ name: z.string(), configured: z.boolean() })),
+  blockedCustomers: z.array(z.object({ customerId: z.string().uuid(), displayName: z.string() })),
+});
+
+export const releaseTradingBlockResponse = z.object({ customerId: z.string().uuid(), recoveredCents: integerString, tradingBlocked: z.boolean() });
 
 export type KycStatus = z.infer<typeof kycStatus>;
 export type SignInRequest = z.infer<typeof signInRequest>;
@@ -444,5 +553,31 @@ export type LinkTokenResponse = z.infer<typeof linkTokenResponse>;
 export type LinkBankRequest = z.infer<typeof linkBankRequest>;
 export type CreateDepositRequest = z.infer<typeof createDepositRequest>;
 export type ApiError = z.infer<typeof apiError>;
+export type ActorType = z.infer<typeof actorType>;
+export type ApprovalKind = z.infer<typeof approvalKind>;
+export type ApprovalStatus = z.infer<typeof approvalStatus>;
+export type ReconCategory = z.infer<typeof reconCategory>;
+export type ReconBreakStatus = z.infer<typeof reconBreakStatus>;
+export type AgingBucket = z.infer<typeof agingBucket>;
+export type OperatorResponse = z.infer<typeof operatorResponse>;
+export type ActorSummary = z.infer<typeof actorSummary>;
+export type AdjustBreakRequest = z.infer<typeof adjustBreakRequest>;
 export type ApprovalResponse = z.infer<typeof approvalResponse>;
+export type ApprovalsResponse = z.infer<typeof approvalsResponse>;
+export type DecideApprovalRequest = z.infer<typeof decideApprovalRequest>;
+export type DecideApprovalResponse = z.infer<typeof decideApprovalResponse>;
+export type OperatorsResponse = z.infer<typeof operatorsResponse>;
+export type ProposeRebalanceRequest = z.infer<typeof proposeRebalanceRequest>;
+export type RequestWithdrawalRequest = z.infer<typeof requestWithdrawalRequest>;
+export type FiledApprovalResponse = z.infer<typeof filedApprovalResponse>;
 export type ReconciliationBreakResponse = z.infer<typeof reconciliationBreakResponse>;
+export type ReconRunResponse = z.infer<typeof reconRunResponse>;
+export type ReconciliationResponse = z.infer<typeof reconciliationResponse>;
+export type GenerateCustodianFileRequest = z.infer<typeof generateCustodianFileRequest>;
+export type RunReconciliationRequest = z.infer<typeof runReconciliationRequest>;
+export type ExplainBreakRequest = z.infer<typeof explainBreakRequest>;
+export type InboundEventResponse = z.infer<typeof inboundEventResponse>;
+export type InboundEventsResponse = z.infer<typeof inboundEventsResponse>;
+export type ReplayEventResponse = z.infer<typeof replayEventResponse>;
+export type OpsOverviewResponse = z.infer<typeof opsOverviewResponse>;
+export type ReleaseTradingBlockResponse = z.infer<typeof releaseTradingBlockResponse>;
