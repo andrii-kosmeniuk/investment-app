@@ -51,6 +51,10 @@ COPY --from=build /app/apps/worker/dist ./apps/worker/dist
 COPY --from=build /app/apps/worker/package.json ./apps/worker/package.json
 CMD ["node", "apps/worker/dist/main.js"]
 
-# Render/Docker use the last stage when no --target is set. This web service
-# must boot the HTTP API, not the Alpaca worker.
+# Default stage for Render's single free web service: API + worker in one
+# container. A dedicated Background Worker can still use `--target worker`.
 FROM api
+COPY --from=build /app/apps/worker/node_modules ./apps/worker/node_modules
+COPY --from=build /app/apps/worker/dist ./apps/worker/dist
+COPY --from=build /app/apps/worker/package.json ./apps/worker/package.json
+CMD ["sh", "-c", "node apps/worker/dist/main.js & exec node apps/api/dist/server.js"]
