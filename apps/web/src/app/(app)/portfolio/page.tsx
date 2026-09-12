@@ -10,6 +10,25 @@ export const metadata: Metadata = { title: "Portfolio" };
 
 const bps = (value: number): string => `${(value / 100).toFixed(1)}%`;
 
+/** Customer-facing wording for an order that has not closed yet. */
+function orderStateLabel(state: string): string {
+  switch (state) {
+    case "approved":
+      return "Queued — broker unavailable";
+    case "pending_approval":
+      return "Awaiting approval";
+    case "submitted":
+    case "accepted":
+      return "Sent to broker";
+    case "queued_for_open":
+      return "Waiting for market open";
+    case "partially_filled":
+      return "Partly filled";
+    default:
+      return state.replace(/_/g, " ");
+  }
+}
+
 export default async function PortfolioPage() {
   const api = await requireApi();
   const [portfolio, models, me] = await Promise.all([load(() => api.portfolio()), load(() => api.models()), load(() => api.me())]);
@@ -24,6 +43,7 @@ export default async function PortfolioPage() {
   const available = cents(view.cash.availableToInvestCents);
   const currentModel = view.model ? catalogue.find((model) => model.code === view.model?.code) ?? null : null;
   const canInvest = customer.kycStatus === "approved" && !customer.tradingBlocked;
+  const queuedOrders = view.openOrders.filter((order) => order.state === "approved").length;
 
   return (
     <>
@@ -79,10 +99,12 @@ export default async function PortfolioPage() {
         </div>
         {view.positions.length === 0 ? (
           <EmptyState
-            title={view.openOrders.length > 0 ? "Orders are working" : "No holdings yet"}
+            title={view.openOrders.length > 0 ? (queuedOrders === view.openOrders.length ? "Orders are queued" : "Orders are working") : "No holdings yet"}
             detail={
               view.openOrders.length > 0
-                ? "Your buys have been sent to the broker. Units appear here as each order fills, and every fill is booked to your activity."
+                ? queuedOrders > 0
+                  ? `${queuedOrders === view.openOrders.length ? "Your buys are" : `${queuedOrders} of your buys are`} held because our broker is not answering right now. We re-send them automatically every half minute; your cash stays yours until each order fills.`
+                  : "Your buys have been sent to the broker. Units appear here as each order fills, and every fill is booked to your activity."
                 : available > 0n
                   ? "You have settled cash. Choose a model to invest it."
                   : "Add money first; once it settles you can choose a model."
@@ -137,7 +159,7 @@ export default async function PortfolioPage() {
                   {order.side === "buy" ? "Buy" : "Sell"} {order.symbol}
                 </span>
                 <Money cents={cents(order.notionalCents)} />
-                <StatusPill tone="warning">{order.state}</StatusPill>
+                <StatusPill tone="warning">{orderStateLabel(order.state)}</StatusPill>
               </li>
             ))}
           </ul>

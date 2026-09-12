@@ -1,6 +1,6 @@
 import type { OrderRecord, OrderRepository } from "@corgi/application";
 import type { OrderState } from "@corgi/domain";
-import { eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import type { TransactionalDatabase } from "../pool.js";
 import { orderEvents, orders } from "../schema.js";
 
@@ -16,6 +16,7 @@ function toRecord(row: OrderRow): OrderRecord {
     side: row.side as "buy" | "sell",
     state: row.state as OrderState,
     cumulativeFilledUnitsMicro: row.cumulativeFilledUnitsMicro,
+    requestedNotionalCents: row.requestedNotionalCents,
   };
 }
 
@@ -72,6 +73,23 @@ export class DrizzleOrderRepository implements OrderRepository {
       .where(eq(orders.providerOrderId, providerOrderId))
       .limit(1);
     return row ? toRecord(row) : null;
+  }
+
+  async listAwaitingSubmission(limit: number): Promise<readonly OrderRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(orders)
+      .where(and(eq(orders.state, "approved"), isNull(orders.providerOrderId)))
+      .orderBy(asc(orders.createdAt))
+      .limit(limit);
+    return rows.map(toRecord);
+  }
+
+  async markSubmitted(id: string, providerOrderId: string): Promise<void> {
+    await this.db
+      .update(orders)
+      .set({ providerOrderId, state: "submitted" })
+      .where(and(eq(orders.id, id), eq(orders.state, "approved")));
   }
 
   async recordFill(input: {

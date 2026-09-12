@@ -99,6 +99,7 @@ export async function registerCustomerRoutes(app: FastifyInstance, services: Cus
           confirmationThresholdCents: services.limits.orderConfirmationThresholdCents,
           models: services.models,
           portfolios: services.portfolios,
+          orderListing: services.orderListing,
           getAvailableToTradeCents: async (id) => {
             const now = services.clock.now();
             const accounts = await services.resolver.forCustomer(id, []);

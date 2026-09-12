@@ -1,5 +1,5 @@
 import pino from "pino";
-import { processInboxBatch } from "@corgi/application";
+import { processInboxBatch, submitQueuedOrders } from "@corgi/application";
 import {
   DrizzleAccountResolver,
   DrizzleActorDirectory,
@@ -17,6 +17,7 @@ import {
   createTransactionalDatabase,
   inboundEvents,
   providerStates,
+  transfers,
 } from "@corgi/database";
 import {
   AlpacaBrokerAdapter,
@@ -24,7 +25,7 @@ import {
   PlaidFundingAdapter,
   parsePlaidTransferEvent,
 } from "@corgi/integrations";
-import { eq } from "drizzle-orm";
+import { and, eq, gte, lte } from "drizzle-orm";
 import { buildProviderHandlers, canonicalAlpacaType } from "./composition.js";
 import { loadWorkerConfig } from "./config.js";
 import { financialJobs, scheduleJobs } from "./jobs.js";
@@ -55,15 +56,17 @@ const funding =
 const clock = { now: () => new Date() };
 const ids = { next: () => crypto.randomUUID() };
 const inbox = new DrizzleInboxRepository(db);
+const orders = new DrizzleOrderRepository(db);
+const customers = new DrizzleCustomerRepository(db);
 const handlers = buildProviderHandlers({
   ledger: new DrizzleLedgerRepository(db),
   clock,
   ids,
   resolver: new DrizzleAccountResolver(db),
-  orders: new DrizzleOrderRepository(db),
+  orders,
   taxLots: new DrizzleTaxLotRepository(db),
   transfers: new DrizzleTransferRepository(db),
-  customers: new DrizzleCustomerRepository(db),
+  customers,
   settlements: new DrizzleSettlementRepository(db),
   approvals: new DrizzleApprovalRepository(db),
   actors: new DrizzleActorDirectory(db),
@@ -120,7 +123,7 @@ async function consumeAlpaca(): Promise<void> {
         .from(providerStates)
         .where(eq(providerStates.provider, "alpaca"))
         .limit(1);
-      for await (const event of broker.streamTradeEvents(state?.cursor ?? undefined)) {
+      for await (const event of broker.streamTradeEvents(state?.cursor ?? undefined, shutdown.signal)) {
         if (shutdown.signal.aborted) break;
         const rawEvent = String((event.payload as { event?: unknown }).event ?? event.type);
         const canonical = canonicalAlpacaType(rawEvent);
@@ -140,10 +143,12 @@ async function consumeAlpaca(): Promise<void> {
         if (event.cursor) await saveCursor("alpaca", event.cursor);
       }
       reconnectAttempt = 0;
-    } catch (error) {
+    } catch (err) {
+      if (shutdown.signal.aborted) break; // the stream was closed by stop(), not by Alpaca
       reconnectAttempt += 1;
       const delayMs = Math.min(30_000, 500 * 2 ** reconnectAttempt);
-      logger.error({ error, reconnectAttempt, delayMs }, "Alpaca stream disconnected");
+      // `err` is the key pino serialises (message + stack); `error` logs as {}.
+      logger.error({ err, reconnectAttempt, delayMs }, "Alpaca stream disconnected");
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
@@ -178,13 +183,42 @@ async function syncPlaid(): Promise<void> {
   if (nextCursor) await saveCursor("plaid", nextCursor);
 }
 
+// Plaid's sandbox never moves a transfer past `pending` on its own (only the
+// dashboard, the magic amounts like $11.11, or /sandbox/transfer/simulate do).
+// Stand in for the bank: once a deposit has aged PLAID_SANDBOX_SETTLE_MS, ask
+// Plaid to post and settle it. The resulting events arrive through the same
+// /transfer/event/sync path as production, so nothing here touches the ledger.
+const SANDBOX_LOOKBACK_MS = 3 * 24 * 60 * 60 * 1000;
+async function advanceSandboxTransfers(): Promise<void> {
+  if (!funding?.isSandbox) return;
+  const now = Date.now();
+  const candidates = await db
+    .select({ providerTransferId: transfers.providerTransferId, amountCents: transfers.amountCents })
+    .from(transfers)
+    .where(
+      and(
+        eq(transfers.direction, "deposit"),
+        gte(transfers.createdAt, new Date(now - SANDBOX_LOOKBACK_MS)),
+        lte(transfers.createdAt, new Date(now - config.PLAID_SANDBOX_SETTLE_MS)),
+      ),
+    );
+  for (const transfer of candidates) {
+    const status = await funding.getTransferStatus(transfer.providerTransferId);
+    logger.debug({ transferId: transfer.providerTransferId, status }, "sandbox deposit checked");
+    if (status !== "pending" && status !== "posted") continue; // settled, returned, failed: nothing to do
+    if (status === "pending") await funding.simulateTransferEvent(transfer.providerTransferId, "posted");
+    await funding.simulateTransferEvent(transfer.providerTransferId, "settled");
+    logger.info({ transferId: transfer.providerTransferId, amountCents: transfer.amountCents.toString(), from: status }, "sandbox deposit settled");
+  }
+}
+
 function runLoop(label: string, task: () => Promise<void>, intervalMs: number): NodeJS.Timeout {
   let running = false;
   return setInterval(() => {
     if (running || shutdown.signal.aborted) return;
     running = true;
     task()
-      .catch((error) => logger.error({ error, loop: label }, "loop iteration failed"))
+      .catch((err) => logger.error({ err, loop: label }, "loop iteration failed"))
       .finally(() => {
         running = false;
       });
@@ -200,13 +234,29 @@ const inboxTimer = runLoop(
   config.INBOX_POLL_MS,
 );
 const plaidTimer = funding ? runLoop("plaid-sync", syncPlaid, config.PLAID_SYNC_MS) : null;
+const sandboxSettleTimer = funding?.isSandbox ? runLoop("plaid-sandbox-settle", advanceSandboxTransfers, config.PLAID_SYNC_MS) : null;
+// Orders placed while the broker answered 5xx / timed out sit as `approved`
+// with no provider id; re-send them until the rail is back (ADR-0007).
+const orderRetryTimer = runLoop(
+  "order-retry",
+  () =>
+    submitQueuedOrders({ orders, customers, broker }).then((result) => {
+      if (result.attempted > 0) logger.info(result, "queued orders re-sent");
+    }),
+  config.ORDER_RETRY_MS,
+);
 
 async function stop(signal: string): Promise<void> {
   logger.info({ signal }, "worker shutting down");
   shutdown.abort();
   clearInterval(inboxTimer);
+  clearInterval(orderRetryTimer);
   if (plaidTimer) clearInterval(plaidTimer);
+  if (sandboxSettleTimer) clearInterval(sandboxSettleTimer);
   for (const job of scheduled) job.stop();
+  // Whatever is still awaiting (a loop mid-iteration, a slow pool.end) gets
+  // ten seconds; Render's grace period is longer, so this is the fallback.
+  setTimeout(() => process.exit(0), 10_000).unref();
   await pool.end();
 }
 

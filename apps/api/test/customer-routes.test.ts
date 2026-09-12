@@ -272,6 +272,25 @@ describe("onboarding and verification", () => {
     expect(state.inquiries).toHaveLength(1);
   });
 
+  it("picks up a finished inquiry from Persona when the webhook never arrived", async () => {
+    const token = await tokenFor("noah@demo.corgi");
+    await app.inject({ method: "POST", url: "/v1/customer/verification", headers: authed(token) });
+    let onboarding = onboardingResponse.parse((await app.inject({ method: "GET", url: "/v1/customer/onboarding", headers: authed(token) })).json());
+    expect(onboarding.customer.kycStatus).toBe("pending");
+
+    state.identityStatus = "approved"; // Persona finished; no webhook reached us
+    onboarding = onboardingResponse.parse((await app.inject({ method: "GET", url: "/v1/customer/onboarding", headers: authed(token) })).json());
+    expect(onboarding.customer.kycStatus).toBe("approved");
+    expect(onboarding.steps.map((step) => [step.key, step.status])).toEqual([
+      ["account", "complete"],
+      ["identity", "complete"],
+      ["bank", "current"],
+      ["deposit", "upcoming"],
+      ["model", "upcoming"],
+    ]);
+    expect(state.profiles.find((profile) => profile.email === "noah@demo.corgi")).toMatchObject({ kycStatus: "approved", tradingBlocked: false });
+  });
+
   it("refuses verification for an approved customer", async () => {
     const response = await app.inject({ method: "POST", url: "/v1/customer/verification", headers: authed(await tokenFor("olivia@demo.corgi")) });
     expect(response.statusCode).toBe(403);

@@ -19,6 +19,14 @@ const schema = z.object({
   INBOX_POLL_MS: z.coerce.number().int().min(250).max(60_000).default(2_000),
   INBOX_BATCH_SIZE: z.coerce.number().int().min(1).max(500).default(50),
   PLAID_SYNC_MS: z.coerce.number().int().min(1_000).max(300_000).default(15_000),
+  /**
+   * Sandbox only: a Plaid transfer older than this is nudged pending → posted →
+   * settled through `/sandbox/transfer/simulate`, because sandbox transfers
+   * never move on their own (ADR-0008). Ignored against production Plaid.
+   */
+  PLAID_SANDBOX_SETTLE_MS: z.coerce.number().int().min(0).max(86_400_000).default(60_000),
+  /** How often orders queued during a broker outage are re-sent (ADR-0007). */
+  ORDER_RETRY_MS: z.coerce.number().int().min(5_000).max(600_000).default(30_000),
 });
 
 export type WorkerConfig = z.infer<typeof schema>;

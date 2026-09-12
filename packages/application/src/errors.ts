@@ -34,6 +34,28 @@ export class EmailTakenError extends Error {
   override readonly name = "EmailTakenError";
 }
 
+/**
+ * The customer already has orders the broker has not finished (queued,
+ * submitted or partially filled). A second model choice would invest the same
+ * cash twice, so it waits until those orders settle one way or the other.
+ */
+export class OrdersInFlightError extends Error {
+  override readonly name = "OrdersInFlightError";
+}
+
+/**
+ * The broker answered with a server-side failure (5xx) or did not answer at
+ * all. Distinguished from a rejection (4xx): the order is valid, the rail is
+ * down, so the order is queued and retried rather than failed (ADR-0007).
+ */
+export function isBrokerOutage(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const status = (error as { status?: unknown }).status;
+  if (typeof status === "number") return status >= 500;
+  // fetch() network failures and AbortSignal timeouts carry no status.
+  return error.name === "TypeError" || error.name === "TimeoutError" || error.name === "AbortError";
+}
+
 /** The customer's current state forbids the action (e.g. KYC not approved). */
 export class NotPermittedError extends Error {
   override readonly name = "NotPermittedError";

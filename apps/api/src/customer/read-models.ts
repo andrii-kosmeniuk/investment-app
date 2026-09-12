@@ -6,6 +6,7 @@ import {
   RETURN_PERIODS,
   type ReturnPeriod,
   type ValuationRecord,
+  applyInquiryStatus,
   buildActivityRows,
   buildDepositProgress,
   buildOnboardingView,
@@ -168,14 +169,44 @@ export async function loadModels(services: CustomerServices): Promise<readonly M
   }));
 }
 
+/**
+ * Webhook fallback: Persona pushes `inquiry.*` events to `/webhooks/persona`,
+ * but a sleeping free-tier instance or an unconfigured webhook leaves the
+ * customer "pending" forever. When the customer comes back to onboarding with
+ * an unresolved inquiry, ask Persona directly and apply any final answer
+ * through the same `applyInquiryStatus` the webhook path uses. A Persona
+ * outage here must never break the page, so failures are swallowed.
+ */
+async function reconcilePendingInquiry(
+  services: CustomerServices,
+  profile: CustomerProfile,
+  latestInquiry: { inquiryId: string; status: string } | null,
+): Promise<CustomerProfile> {
+  if (!services.identity || !latestInquiry) return profile;
+  // approved / declined are final; pending and needs_review can still move.
+  if (profile.kycStatus === "approved" || profile.kycStatus === "declined") return profile;
+  try {
+    const status = await services.identity.getStatus(latestInquiry.inquiryId);
+    if (status === profile.kycStatus || status === "pending") return profile;
+    await applyInquiryStatus(
+      { customers: services.customers },
+      { customerId: profile.id, status, occurredAt: services.clock.now() },
+    );
+    return (await services.directory.findProfile(profile.id)) ?? profile;
+  } catch {
+    return profile;
+  }
+}
+
 export async function loadOnboarding(services: CustomerServices, customerId: string): Promise<OnboardingResponse> {
-  const profile = await requireProfile(services, customerId);
+  const initialProfile = await requireProfile(services, customerId);
   const [latestInquiry, bankAccounts, transfers, assignment] = await Promise.all([
     services.inquiries.latestForCustomer(customerId),
     services.bankAccounts.listForCustomer(customerId),
     services.transfers.listForCustomer(customerId),
     services.portfolios.findForCustomer(customerId),
   ]);
+  const profile = await reconcilePendingInquiry(services, initialProfile, latestInquiry);
   const view = buildOnboardingView({
     profile,
     latestInquiry,

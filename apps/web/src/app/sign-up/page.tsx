@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Brand } from "../../components/Brand";
-import { CorgiField } from "../../components/CorgiField";
+import { AuthHeroSection } from "../../components/landing/AuthHeroSection";
 import { SignUpForm } from "../../components/SignUpForm";
 import { readSessionToken } from "../../server/session";
 
@@ -21,7 +21,7 @@ export default async function SignUpPage() {
           </Link>
         </nav>
       </header>
-      <section className="entry__grid">
+      <AuthHeroSection>
         <div className="entry__copy entry__copy--form">
           <h1>Start with your name.</h1>
           <p className="entry__lead">
@@ -30,10 +30,7 @@ export default async function SignUpPage() {
           </p>
           <SignUpForm />
         </div>
-        <div className="entry__art" aria-hidden="true">
-          <CorgiField animate inkVar="--ink-strong" className="entry__canvas" />
-        </div>
-      </section>
+      </AuthHeroSection>
     </main>
   );
 }

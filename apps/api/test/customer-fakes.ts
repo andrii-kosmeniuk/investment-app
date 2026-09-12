@@ -114,6 +114,8 @@ export interface FakeState {
   submittedOrders: Array<{ symbol: string; notionalCents: bigint }>;
   deposits: Array<{ accessToken: string; amountCents: bigint }>;
   identityCalls: string[];
+  /** What Persona answers when asked for an inquiry's status (webhook fallback). */
+  identityStatus: "pending" | "needs_review" | "approved" | "declined";
 }
 
 function accountsFor(customerId: string): CustomerLedgerAccounts {
@@ -275,6 +277,7 @@ export async function defaultState(): Promise<FakeState> {
     submittedOrders: [],
     deposits: [],
     identityCalls: [],
+    identityStatus: "pending",
   };
   return state;
 }
@@ -295,7 +298,7 @@ export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}
       return Promise.resolve({ inquiryId: `inq-${state.identityCalls.length}`, sessionToken: "tok-1" });
     },
     resumeInquiry: () => Promise.resolve({ sessionToken: "tok-resumed" }),
-    getStatus: () => Promise.resolve("pending"),
+    getStatus: () => Promise.resolve(state.identityStatus),
   };
   const funding: FundingPort = {
     createLinkToken: () => Promise.resolve("link-sandbox-abc"),
@@ -493,6 +496,13 @@ export function fakeCustomerServices(state: FakeState, options: FakeOptions = {}
       findById: (id) => Promise.resolve(state.orders.find((order) => order.id === id) ?? null),
       findByClientOrderId: (clientOrderId) => Promise.resolve(state.orders.find((order) => order.clientOrderId === clientOrderId) ?? null),
       findByProviderOrderId: (providerOrderId) => Promise.resolve(state.orders.find((order) => order.providerOrderId === providerOrderId) ?? null),
+      listAwaitingSubmission: (limit) => Promise.resolve(state.orders.filter((o) => o.state === "approved" && o.providerOrderId === null).slice(0, limit)),
+      markSubmitted: (id, providerOrderId) => {
+        const index = state.orders.findIndex((o) => o.id === id);
+        const order = state.orders[index];
+        if (order) state.orders[index] = { ...order, providerOrderId, state: "submitted" };
+        return Promise.resolve();
+      },
       recordFill: () => Promise.resolve(),
     },
     orderListing: { listOpenForCustomer: () => Promise.resolve(state.openOrders) },

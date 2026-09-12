@@ -11,6 +11,8 @@ export interface PlateFigure {
   /** Intrinsic pixel size of the frames (exported at 2× display size). */
   readonly width: number;
   readonly height: number;
+  /** A single still image (public path) instead of the two breathing frames. */
+  readonly still?: string;
 }
 
 type InView = "pending" | "true";
@@ -70,24 +72,30 @@ export function Plate({
     >
       <div className="plate__rule" aria-hidden="true" />
       <figure className="plate__figure">
-        <div className="plate__frames">
-          <Image
-            src={`/plates/${figure.stem}-a.png`}
-            alt=""
-            width={figure.width}
-            height={figure.height}
-            unoptimized
-            className="plate__frame plate__frame--a"
-          />
-          <Image
-            src={`/plates/${figure.stem}-b.png`}
-            alt=""
-            width={figure.width}
-            height={figure.height}
-            unoptimized
-            className="plate__frame plate__frame--b"
-          />
-        </div>
+        {figure.still ? (
+          <div className="plate__frames plate__frames--still">
+            <Image src={figure.still} alt="" width={figure.width} height={figure.height} className="plate__still" />
+          </div>
+        ) : (
+          <div className="plate__frames">
+            <Image
+              src={`/plates/${figure.stem}-a.png`}
+              alt=""
+              width={figure.width}
+              height={figure.height}
+              unoptimized
+              className="plate__frame plate__frame--a"
+            />
+            <Image
+              src={`/plates/${figure.stem}-b.png`}
+              alt=""
+              width={figure.width}
+              height={figure.height}
+              unoptimized
+              className="plate__frame plate__frame--b"
+            />
+          </div>
+        )}
         <figcaption>
           Plate {numeral} · {figure.subject}
         </figcaption>

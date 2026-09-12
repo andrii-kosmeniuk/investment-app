@@ -222,7 +222,8 @@ export const investmentLeg = z.object({
 
 export const investmentResponse = z.object({
   modelCode: z.string().min(1),
-  legs: z.array(investmentLeg.extend({ status: z.literal("submitted") })),
+  /** `queued`: the broker was unreachable; the order is held and re-sent by the worker. */
+  legs: z.array(investmentLeg.extend({ status: z.enum(["submitted", "queued"]) })),
 });
 
 /** 409 body when an order at/above the confirmation threshold needs the customer's explicit OK. */

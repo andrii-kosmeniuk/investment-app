@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import type { ModelResponse } from "@corgi/contracts";
 import { AllocationBar, EnvironmentBadge, StatusPill } from "@corgi/ui";
 import { Brand } from "../components/Brand";
-import { CorgiField } from "../components/CorgiField";
+import { CoinMarquee } from "../components/landing/CoinMarquee";
+import { HeroArt } from "../components/landing/HeroArt";
 import { LandingNav } from "../components/landing/LandingNav";
 import { Plate } from "../components/landing/Plate";
 import {
@@ -17,12 +18,44 @@ import {
 import { anonymousApi } from "../server/api";
 import { readSessionToken } from "../server/session";
 
-const facts = [
-  "Identity verification before any money moves",
-  "Deposits from a linked bank account",
-  "Four model portfolios, rebalanced monthly",
-  "Returns restated, never rewritten",
-] as const;
+const pct = (bps: number): string => `${(bps / 100).toFixed(bps % 100 === 0 ? 0 : 2)}%`;
+
+/**
+ * Where each step sits on the level map, as percentages of the map box. The
+ * cards zig-zag down the page; the dashed path below is drawn through the same
+ * points, so the two can never drift apart.
+ */
+type Spot = { readonly x: number; readonly y: number };
+
+const STEP_SPOTS: readonly Spot[] = [
+  { x: 12, y: 28 },
+  { x: 31, y: 72 },
+  { x: 50, y: 28 },
+  { x: 69, y: 72 },
+  { x: 88, y: 28 },
+];
+
+/**
+ * Hand-placed elbows between consecutive cards. Legs start and end under the
+ * cards, so only the visible run between them matters: 01 steps right, down
+ * and right into 02; 02 climbs out of its top and runs right into 03's side;
+ * 03 leaves its right side, drops, and runs right into 04's side; 04 climbs
+ * out of its top and runs right into 05's side.
+ */
+const STEP_ROUTES: readonly (readonly Spot[])[] = [
+  [{ x: 21, y: 28 }, { x: 21, y: 72 }],
+  [{ x: 35, y: 72 }, { x: 35, y: 33 }, { x: 50, y: 33 }],
+  [{ x: 50, y: 33 }, { x: 60, y: 33 }, { x: 60, y: 72 }],
+  [{ x: 70, y: 72 }, { x: 70, y: 33 }, { x: 88, y: 33 }],
+];
+
+function stepPath(): string {
+  return STEP_SPOTS.map((spot, index) => {
+    if (index === 0) return `M ${spot.x} ${spot.y}`;
+    const elbows = STEP_ROUTES[index - 1] ?? [];
+    return [...elbows, spot].map((point) => `L ${point.x} ${point.y}`).join(" ");
+  }).join(" ");
+}
 
 /** The catalogue is product configuration; an unreachable API leaves the plate honest, not empty-handed. */
 async function loadModels(): Promise<readonly ModelResponse[] | null> {
@@ -42,9 +75,21 @@ export default async function EntryPage() {
       <LandingNav />
 
       <main id="top" className="entry landing__main">
-        <section className="entry__grid" aria-labelledby="hero-title">
+        <section className="entry__grid entry__hero" aria-labelledby="hero-title">
+          <Image
+            src="/hero-field.jpg"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            quality={92}
+            className="entry__hero-bg"
+            aria-hidden="true"
+          />
           <div className="entry__copy">
-            <h1 id="hero-title">A clearer view of your investments.</h1>
+            <h1 id="hero-title">
+              A clearer view of your <em className="entry__accent">investments.</em>
+            </h1>
             <p className="entry__lead">
               Fund a model portfolio from your bank, watch every order land, and see exactly what changed, when, and
               what was known at the time.
@@ -58,63 +103,100 @@ export default async function EntryPage() {
               </Link>
             </div>
           </div>
-          <div className="entry__art" aria-hidden="true">
-            <CorgiField animate inkVar="--ink-strong" className="entry__canvas" />
+          <HeroArt priority className="entry__hero-art" />
+        </section>
+
+        <CoinMarquee />
+
+        <section id="how-it-works" className="steps" aria-labelledby="how-it-works-title">
+          <div className="steps__head">
+            <span className="section-numeral">I</span>
+            <h2 id="how-it-works-title">Five steps, in order.</h2>
+            <p>
+              Each step is confirmed by the provider or by the ledger — never by a redirect. You can look around after the
+              first one; money moves only after the second.
+            </p>
+          </div>
+          <div className="steps__map">
+            <svg className="steps__path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <path d={stepPath()} />
+            </svg>
+            <ol className="steps__list">
+              {ONBOARDING_STEPS.map((step, index) => {
+                const spot = STEP_SPOTS[index] ?? { x: 50, y: 50 };
+                return (
+                  <li key={step.title} className="step-card" style={{ left: `${spot.x}%`, top: `${spot.y}%` }}>
+                    <span className="step-card__number" aria-hidden="true">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <div className="step-card__body">
+                      <strong>{step.title}</strong>
+                      <span>{step.detail}</span>
+                    </div>
+                    <span className="step-card__pixels" aria-hidden="true" />
+                  </li>
+                );
+              })}
+            </ol>
           </div>
         </section>
 
-        <ol className="entry__facts">
-          {facts.map((fact, index) => (
-            <li key={fact}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              {fact}
-            </li>
-          ))}
-        </ol>
-
-        <Plate id="how-it-works" numeral="I" title="Five steps, in order." figure={FIELD_GUIDE.stone}>
-          <p>
-            Each step is confirmed by the provider or by the ledger — never by a redirect. You can look around after the
-            first one; money moves only after the second.
-          </p>
-          <ol className="plate__steps">
-            {ONBOARDING_STEPS.map((step) => (
-              <li key={step.title}>
-                <strong>{step.title}</strong>
-                <span>{step.detail}</span>
-              </li>
-            ))}
-          </ol>
-        </Plate>
-
-        <Plate id="models" numeral="II" title="Four model portfolios, nothing else." figure={FIELD_GUIDE.garden} flip>
-          <p>
-            Each model is a fixed set of funds with target weights. Your settled cash is invested to those weights, less
-            a small cash buffer, and the portfolio is rebalanced back to them. Risk is described in words, never as safe or
-            unsafe.
-          </p>
+        <section id="models" className="models" aria-labelledby="models-title">
+          <div className="steps__head">
+            <span className="section-numeral">II</span>
+            <h2 id="models-title">Four model portfolios, nothing else.</h2>
+            <p>
+              Each model is a fixed set of funds with target weights. Your settled cash is invested to those weights, less
+              a small cash buffer, and the portfolio is rebalanced back to them. Risk is described in words, never as safe
+              or unsafe.
+            </p>
+          </div>
           {models && models.length > 0 ? (
-            <ul className="plate__models">
+            <ul className="models__grid">
               {models.map((model) => (
-                <li key={model.id}>
-                  <div className="plate__model-head">
+                <li key={model.id} className="model-card" tabIndex={0}>
+                  <div className="model-card__head">
+                    <span className="model-card__risk">{MODEL_RISK_WORD[model.riskLevel] ?? "Model"}</span>
                     <strong>{model.name}</strong>
-                    <span className="muted">
-                      {MODEL_RISK_WORD[model.riskLevel] ?? "Model"} · risk {model.riskLevel}/5 · cash buffer{" "}
-                      {(model.cashBufferBps / 100).toFixed(model.cashBufferBps % 100 === 0 ? 0 : 2)}%
-                    </span>
                   </div>
-                  <AllocationBar
-                    label={`${model.name} target weights`}
-                    segments={model.allocations.map((leg) => ({ symbol: leg.symbol, weightBps: leg.targetWeightBps }))}
-                  />
+                  <div className="model-card__bar">
+                    <AllocationBar
+                      label={`${model.name} target weights`}
+                      segments={model.allocations.map((leg) => ({ symbol: leg.symbol, weightBps: leg.targetWeightBps }))}
+                    />
+                  </div>
+                  <div className="model-card__more">
+                    <dl>
+                      <div>
+                        <dt>Risk</dt>
+                        <dd>{model.riskLevel} of 5</dd>
+                      </div>
+                      <div>
+                        <dt>Cash buffer</dt>
+                        <dd>{pct(model.cashBufferBps)}</dd>
+                      </div>
+                      <div>
+                        <dt>Funds</dt>
+                        <dd>{model.allocations.length}</dd>
+                      </div>
+                    </dl>
+                    <ul className="model-card__legs">
+                      {model.allocations.map((leg) => (
+                        <li key={leg.symbol}>
+                          <span>{leg.symbol}</span>
+                          <span className="numeric">{pct(leg.targetWeightBps)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <span className="model-card__hint">Rebalanced monthly to these weights.</span>
+                  </div>
                 </li>
               ))}
             </ul>
           ) : (
             <p className="plate__fallback">The model catalogue is unavailable right now; it is shown in full once you sign in.</p>
           )}
-        </Plate>
+        </section>
 
         <Plate id="restatements" numeral="III" title="Corrected, never rewritten." figure={FIELD_GUIDE.clouds}>
           <p>
@@ -139,7 +221,7 @@ export default async function EntryPage() {
           <p className="plate__note">Illustrative figures. Your own history shows every version with its reason.</p>
         </Plate>
 
-        <Plate id="sandbox" numeral="IV" title="Sandbox, labelled as such." figure={FIELD_GUIDE.hills} flip>
+        <Plate id="sandbox" numeral="IV" title="Sandbox, labelled as such." figure={FIELD_GUIDE.garden} flip>
           <p>
             This is a trial build on provider sandboxes. No real money moves, and every screen says so. Where an
             integration is unavailable, the product shows an honest unavailable state instead of a success it cannot
@@ -205,7 +287,9 @@ export default async function EntryPage() {
             </a>
           ))}
           <Link href="/sign-in">Sign in</Link>
-          <Link href="/sign-up">Create an account</Link>
+          <Link href="/sign-up" className="button" data-variant="primary">
+            <span className="button__label">Create an account</span>
+          </Link>
         </nav>
         <p className="muted">
           Corgi Invest · work-trial build. Sandbox providers only; nothing on this site is an offer, a recommendation, or

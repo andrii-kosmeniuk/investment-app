@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Brand } from "../../components/Brand";
-import { CorgiField } from "../../components/CorgiField";
+import { AuthHeroSection } from "../../components/landing/AuthHeroSection";
 import { SignInForm } from "../../components/SignInForm";
 import { readSessionToken } from "../../server/session";
 
@@ -26,16 +26,13 @@ export default async function SignInPage({
           </Link>
         </nav>
       </header>
-      <section className="entry__grid">
+      <AuthHeroSection>
         <div className="entry__copy entry__copy--form">
           <h1>Welcome back.</h1>
           <p className="entry__lead">Sign in to see your portfolio, cash, and every change on the books.</p>
           <SignInForm expired={reason === "expired"} />
         </div>
-        <div className="entry__art" aria-hidden="true">
-          <CorgiField animate inkVar="--ink-strong" className="entry__canvas" />
-        </div>
-      </section>
+      </AuthHeroSection>
     </main>
   );
 }

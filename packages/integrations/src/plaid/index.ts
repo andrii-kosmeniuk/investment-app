@@ -125,6 +125,41 @@ export class PlaidFundingAdapter implements FundingPort {
     return { transferId: response.transfer.id, status: response.transfer.status };
   }
 
+  /** True against `sandbox.plaid.com`, where transfers never move on their own. */
+  get isSandbox(): boolean {
+    return /sandbox/i.test(this.config.baseUrl);
+  }
+
+  /** Plaid's current view of one transfer (`pending`, `posted`, `settled`, `returned`, ...). */
+  async getTransferStatus(transferId: string): Promise<string> {
+    const response = await this.#request<{ transfer: { status: string } }>("/transfer/get", {
+      method: "POST",
+      body: this.#body({ transfer_id: transferId }),
+    });
+    return response.transfer.status;
+  }
+
+  /**
+   * Sandbox only: asks Plaid to move a transfer to its next state. Plaid then
+   * emits the matching event through `/transfer/event/sync`, so our ledger is
+   * still booked by the same path production uses (ADR-0008).
+   */
+  async simulateTransferEvent(
+    transferId: string,
+    eventType: "posted" | "settled" | "returned" | "failed",
+    achReturnCode?: string,
+  ): Promise<void> {
+    if (!this.isSandbox) throw new Error("simulateTransferEvent is only available against the Plaid sandbox");
+    await this.#request<unknown>("/sandbox/transfer/simulate", {
+      method: "POST",
+      body: this.#body({
+        transfer_id: transferId,
+        event_type: eventType,
+        ...(achReturnCode ? { failure_reason: { ach_return_code: achReturnCode } } : {}),
+      }),
+    });
+  }
+
   async syncEvents(cursor?: string): Promise<{
     events: readonly ProviderEvent[];
     nextCursor: string;
@@ -136,11 +171,17 @@ export class PlaidFundingAdapter implements FundingPort {
         timestamp: string;
         transfer_id: string;
       }>;
-      next_cursor: string;
+      has_more?: boolean;
     }>("/transfer/event/sync", {
       method: "POST",
       body: this.#body({ after_id: cursor ? Number(cursor) : 0 }),
     });
+    // Plaid's sync has no server cursor: the caller resumes from the highest
+    // event_id it has seen, so that is what we hand back (unchanged when empty).
+    const nextCursor = response.transfer_events.reduce(
+      (highest, event) => Math.max(highest, event.event_id),
+      cursor ? Number(cursor) : 0,
+    );
     return {
       events: response.transfer_events.map((event) => ({
         id: String(event.event_id),
@@ -149,7 +190,7 @@ export class PlaidFundingAdapter implements FundingPort {
         payload: event,
         cursor: String(event.event_id),
       })),
-      nextCursor: response.next_cursor,
+      nextCursor: String(nextCursor),
     };
   }
 }

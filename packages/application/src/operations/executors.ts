@@ -72,9 +72,15 @@ export function buildApprovalExecutors(deps: ApprovalExecutorDeps): ApprovalExec
         customerConfirmed: true, // the approval *is* the confirmation
         firmInitiatedSell: payload.intent === "sell_to_cover",
       });
-      return placed.status === "submitted"
-        ? { orderId: placed.orderId, providerOrderId: placed.providerOrderId, symbol: payload.symbol, side: payload.side, intent: payload.intent ?? null }
-        : { approvalId: placed.approvalId, status: "pending_approval" };
+      if (placed.status === "pending_approval") return { approvalId: placed.approvalId, status: "pending_approval" };
+      return {
+        orderId: placed.orderId,
+        providerOrderId: placed.status === "submitted" ? placed.providerOrderId : null,
+        status: placed.status,
+        symbol: payload.symbol,
+        side: payload.side,
+        intent: payload.intent ?? null,
+      };
     },
 
     async rebalance(request): Promise<ApprovalOutcome> {
@@ -92,7 +98,7 @@ export function buildApprovalExecutors(deps: ApprovalExecutorDeps): ApprovalExec
             requestedByActorId: request.requestedByActorId,
             customerConfirmed: true,
           });
-          if (placed.status === "submitted") submitted.push(`${leg.side} ${leg.symbol}`);
+          if (placed.status === "submitted" || placed.status === "queued") submitted.push(`${leg.side} ${leg.symbol}`);
         } catch (error) {
           // A buy that does not fit until the sells settle is deferred, not failed.
           if (error instanceof InsufficientFundsError && leg.side === "buy") deferred.push(`${leg.side} ${leg.symbol}`);

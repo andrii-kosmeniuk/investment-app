@@ -52,9 +52,11 @@ COPY --from=build /app/apps/worker/package.json ./apps/worker/package.json
 CMD ["node", "apps/worker/dist/main.js"]
 
 # Default stage for Render's single free web service: API + worker in one
-# container. A dedicated Background Worker can still use `--target worker`.
+# container (ADR-0007). A dedicated Background Worker can still use
+# `--target worker`. The worker is restarted if it ever exits, so a crash in a
+# loop does not silently stop settlement, fills and crons while the API stays up.
 FROM api
 COPY --from=build /app/apps/worker/node_modules ./apps/worker/node_modules
 COPY --from=build /app/apps/worker/dist ./apps/worker/dist
 COPY --from=build /app/apps/worker/package.json ./apps/worker/package.json
-CMD ["sh", "-c", "node apps/worker/dist/main.js & exec node apps/api/dist/server.js"]
+CMD ["sh", "-c", "(while true; do node apps/worker/dist/main.js; echo \"worker exited ($?), restarting in 5s\" >&2; sleep 5; done) & exec node apps/api/dist/server.js"]

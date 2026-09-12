@@ -239,6 +239,7 @@ export class FakeOrderRepository implements OrderRepository {
       side: order.side,
       state: order.state,
       cumulativeFilledUnitsMicro: 0n,
+      requestedNotionalCents: order.requestedNotionalCents,
     };
     this.byClientId.set(order.clientOrderId, record);
     if (order.providerOrderId) this.byProviderId.set(order.providerOrderId, record);
@@ -260,6 +261,25 @@ export class FakeOrderRepository implements OrderRepository {
 
   findByProviderOrderId(providerOrderId: string): Promise<OrderRecord | null> {
     return Promise.resolve(this.byProviderId.get(providerOrderId) ?? null);
+  }
+
+  get all(): OrderRecord[] {
+    return [...this.byClientId.values()];
+  }
+
+  listAwaitingSubmission(limit: number): Promise<readonly OrderRecord[]> {
+    return Promise.resolve(this.all.filter((o) => o.state === "approved" && o.providerOrderId === null).slice(0, limit));
+  }
+
+  markSubmitted(id: string, providerOrderId: string): Promise<void> {
+    for (const [key, record] of this.byClientId) {
+      if (record.id === id) {
+        const updated = { ...record, providerOrderId, state: "submitted" as const };
+        this.byClientId.set(key, updated);
+        this.byProviderId.set(providerOrderId, updated);
+      }
+    }
+    return Promise.resolve();
   }
 
   recordFill(input: {

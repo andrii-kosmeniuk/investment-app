@@ -9,14 +9,39 @@
   text-rendering: optimizeLegibility;
 }
 
+/* One horizontal gutter for the whole landing surface: header, hero, coin band, sections and footer. */
+:root {
+  --page-gutter: clamp(1.5rem, 6vw, 6rem);
+  /* The shared content measure: plates, hero copy, model cards and the closing call sit on the same edges. */
+  --measure: 79rem;
+  --measure-bleed: 40px;
+  /* Left edge shared by the logo, hero copy, and every measure-aligned block. */
+  --align-left: max(var(--page-gutter), calc((100% - var(--measure)) / 2 - var(--measure-bleed)));
+}
+
 html,
 body {
   margin: 0;
   min-height: 100%;
 }
 
+/* The page is exactly as wide as the window: decorative overhangs (hero art, map tiles) are clipped, never scrolled to. */
+html {
+  overflow-x: clip;
+}
+
+.landing {
+  overflow-x: clip;
+}
+
 a {
   color: inherit;
+}
+
+/* Next.js `<Link className="button">` inherits body colour and would read black on orange. */
+a.button[data-variant="primary"],
+a.button[data-variant="primary"] .button__label {
+  color: #fff;
 }
 
 code {
@@ -82,10 +107,12 @@ code {
 /* ---- entry / sign-in -------------------------------------------------- */
 
 .entry {
+  /* Inset from the entry content box that centres the shared measure. */
+  --measure-edge: max(0px, calc((100% - var(--measure)) / 2));
   display: grid;
   grid-template-rows: auto 1fr auto;
   min-height: 100vh;
-  padding: 0 clamp(1.25rem, 3vw, 3rem) clamp(1.5rem, 3vw, 3rem);
+  padding: 0 var(--page-gutter) clamp(1.5rem, 3vw, 3rem);
 }
 
 .entry__nav {
@@ -106,7 +133,8 @@ code {
   border-radius: var(--radius-pill);
   color: var(--ink-default);
   font-size: 0.875rem;
-  padding: 0.5rem 0.9rem;
+  line-height: 1.2;
+  padding: 0.55rem 0.9rem;
   text-decoration: none;
 }
 
@@ -162,40 +190,180 @@ code {
   min-height: 24rem;
 }
 
-.entry__canvas {
-  display: block;
-  height: 100%;
-  width: 100%;
+/* The landing hero keeps the same column split as sign-in and sign-up, so the sky is the same size on all three. */
+
+/*
+ * Landing hero: the painted field runs edge to edge behind the whole section
+ * (it breaks out of the page padding), at reduced opacity, and dissolves into
+ * the canvas colour along its bottom so the coin band begins on plain page.
+ */
+.entry__hero {
+  align-content: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  isolation: isolate;
+  margin-inline: calc(-1 * var(--page-gutter));
+  overflow: hidden;
+  padding-inline: var(--align-left);
+  position: relative;
 }
 
-.entry__facts {
-  align-items: center;
-  border-bottom: 1px solid var(--ink-strong);
-  border-top: 1px solid var(--ink-strong);
-  display: grid;
-  gap: 0 2rem;
-  grid-template-columns: repeat(4, 1fr);
-  list-style: none;
-  margin: 0;
-  padding: clamp(1.25rem, 3vw, 2rem) 0;
-}
-
-.entry__facts li {
-  color: var(--ink-strong);
-  display: grid;
-  font-size: 0.9375rem;
-  gap: 0.5rem;
-  line-height: 1.4;
-}
-
-.entry__facts span {
-  color: var(--accent-text);
-  font-family: var(--font-code);
-  font-size: 0.75rem;
-}
-
-.entry--signin .entry__grid {
+/* The section takes the painting's own proportions (1024 × 571), so `cover` only ever
+   scales the image up to the page width and never crops or over-enlarges it. */
+.landing__main .entry__hero {
+  aspect-ratio: 1024 / 571;
   min-height: 0;
+}
+
+.entry__hero-bg {
+  object-fit: cover;
+  object-position: 50% 50%;
+  opacity: 0.9;
+  z-index: -1;
+}
+
+.entry__hero::after {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in oklch, var(--surface-canvas) 35%, transparent) 40%,
+    color-mix(in oklch, var(--surface-canvas) 80%, transparent) 75%,
+    var(--surface-canvas) 100%
+  );
+  bottom: 0;
+  content: "";
+  height: clamp(8rem, 30%, 18rem);
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  z-index: 0;
+}
+
+/* The left half of the painting is veiled with the canvas colour so the copy sits on a calm, pale field
+   and the scene emerges towards the right; the veil thins smoothly, never in a band. */
+.entry__hero::before {
+  background: linear-gradient(
+    to right,
+    color-mix(in oklch, var(--surface-canvas) 80%, transparent) 0%,
+    color-mix(in oklch, var(--surface-canvas) 77%, transparent) 22%,
+    color-mix(in oklch, var(--surface-canvas) 66%, transparent) 38%,
+    color-mix(in oklch, var(--surface-canvas) 48%, transparent) 52%,
+    color-mix(in oklch, var(--surface-canvas) 28%, transparent) 66%,
+    color-mix(in oklch, var(--surface-canvas) 12%, transparent) 80%,
+    color-mix(in oklch, var(--surface-canvas) 3%, transparent) 92%,
+    transparent 100%
+  );
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.entry__hero .entry__copy {
+  align-self: center;
+  margin-left: clamp(2rem, 12vw, 9rem);
+  position: relative;
+  z-index: 1;
+}
+
+.entry__hero .entry__hero-art {
+  align-self: center;
+  justify-self: end;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.entry__hero .hero-art__corgi {
+  height: auto;
+  width: min(100%, 34rem);
+}
+
+.entry__accent {
+  color: var(--accent);
+  font-style: italic;
+}
+
+/* Hero art: the cut-out corgi piggy bank on the bare canvas, shared with sign-in and sign-up. */
+.hero-art {
+  align-items: center;
+  display: grid;
+  justify-items: center;
+  min-height: clamp(20rem, 55vh, 38rem);
+  position: relative;
+}
+
+.entry__hero-art {
+  min-height: clamp(20rem, 55vh, 38rem);
+}
+
+.hero-art__corgi {
+  height: auto;
+  position: relative;
+  width: min(88%, 36rem);
+}
+
+/*
+ * Coin band: two identical tracks slide left together; once the first has
+ * travelled its own width the loop restarts on the seam. The rules above and
+ * below are the same page-wide dividers the facts strip used to sit between.
+ */
+/* Edge to edge like the hero above it; the rule beneath is a soft 60% grey. */
+.coin-marquee {
+  border-bottom: 1px solid color-mix(in oklch, var(--line-strong) 60%, transparent);
+  margin-inline: calc(-1 * var(--page-gutter));
+  padding: clamp(1rem, 2.5vw, 1.5rem) 0;
+}
+
+.coin-marquee__viewport {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+  overflow: hidden;
+}
+
+.coin-marquee__track {
+  animation: coin-marquee 36s linear infinite;
+  display: flex;
+  gap: clamp(2.5rem, 6vw, 5rem);
+  width: max-content;
+  will-change: transform;
+}
+
+.coin-marquee__coin {
+  flex: none;
+  height: 2.75rem;
+  width: 2.75rem;
+}
+
+@keyframes coin-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(calc(-50% - clamp(2.5rem, 6vw, 5rem) / 2));
+  }
+}
+
+/* Auth pages: same nav inset and hero treatment as the landing page. */
+.entry--signin {
+  padding-inline: 0;
+}
+
+.entry--signin .entry__nav {
+  padding-inline: var(--align-left);
+}
+
+.entry__hero--auth {
+  aspect-ratio: auto;
+  flex: 1;
+  min-height: calc(100svh - 4.5rem);
+}
+
+.entry__hero--auth .entry__copy--form {
+  align-self: center;
+  margin-left: clamp(2rem, 12vw, 9rem);
 }
 
 .entry__copy--form h1 {
@@ -241,22 +409,25 @@ code {
   gap: 1.5rem;
   grid-template-columns: auto 1fr auto;
   min-height: 4.5rem;
-  padding: 0 clamp(1.25rem, 3vw, 3rem);
+  padding-inline: var(--align-left);
   position: sticky;
   top: 0;
   z-index: 20;
 }
 
 .landing__links {
+  align-items: center;
   display: flex;
   gap: clamp(1rem, 2.5vw, 2rem);
   justify-content: center;
+  min-height: 2.75rem;
 }
 
 .landing__links a {
   border-bottom: 1px solid transparent;
   color: var(--ink-default);
   font-size: 0.875rem;
+  line-height: 1.2;
   padding: 0.25rem 0;
   text-decoration: none;
   transition: color var(--duration-fast) var(--ease-enter), border-color var(--duration-fast) var(--ease-enter);
@@ -273,18 +444,12 @@ code {
   gap: 0.75rem;
 }
 
-.landing__auth-link {
-  border-bottom: 1px solid transparent;
-  color: var(--ink-default);
+.landing__auth .button[data-variant="primary"],
+.landing__footer .button[data-variant="primary"] {
+  border-radius: var(--radius-pill);
   font-size: 0.875rem;
-  padding: 0.25rem 0;
-  text-decoration: none;
-  transition: color var(--duration-fast) var(--ease-enter), border-color var(--duration-fast) var(--ease-enter);
-}
-
-.landing__auth-link:hover {
-  border-bottom-color: var(--ink-strong);
-  color: var(--ink-strong);
+  line-height: 1.2;
+  padding-block: 0.55rem;
 }
 
 .landing__burger {
@@ -348,33 +513,45 @@ code {
 
 /* One plate: figure + caption, an ink rule that draws in when it enters view. */
 .plate {
+  align-items: center;
   display: grid;
-  gap: clamp(2rem, 5vw, 5rem);
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(3rem, 8vw, 9rem);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 4fr);
+  margin-inline: calc(-1 * var(--measure-bleed));
+  padding-inline: var(--measure-edge);
   margin-top: clamp(4rem, 8vw, 7rem);
-  padding-top: 2.5rem;
+  padding-top: 0;
   position: relative;
   scroll-margin-top: 5.5rem;
 }
 
+/* Figure and caption fill their tracks, so the caption's text edge is the shared measure edge. */
+.plate__figure,
+.plate__caption {
+  width: 100%;
+}
+
+/* Same width as the rule above Four model portfolios: full measure, inside the padded box. */
 .plate__rule {
   background: var(--ink-strong);
+  display: block;
+  grid-column: 1 / -1;
   height: 1px;
-  left: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
+  margin-bottom: 2.5rem;
   transform-origin: left;
+  width: 100%;
 }
 
 /* Flipped plates keep the figure in the narrower column; only the side changes. */
 .plate[data-flip] {
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  grid-template-columns: minmax(0, 4fr) minmax(0, 3fr);
 }
 
 .plate[data-flip] .plate__figure {
   order: 2;
 }
+
+
 
 .plate__figure {
   align-content: start;
@@ -386,11 +563,13 @@ code {
   top: 6rem;
 }
 
+/* Every plate picture is the same box: 3:4, up to 30rem wide, whichever side it sits on. */
 .plate__frames {
   aspect-ratio: 3 / 4;
   background: var(--surface-canvas);
   overflow: hidden;
   position: relative;
+  width: 100%;
 }
 
 .plate__frame {
@@ -423,10 +602,11 @@ code {
 
 .plate__caption h2 {
   color: var(--ink-strong);
-  font-size: clamp(1.75rem, 3vw, 2.375rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 4vw, 3.25rem);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
   margin: 0;
   text-wrap: balance;
 }
@@ -444,77 +624,410 @@ code {
   font-size: 0.875rem;
 }
 
-.plate__steps {
-  border-top: 1px solid var(--line);
-  counter-reset: step;
-  list-style: none;
-  margin: 0.25rem 0 0;
-  padding: 0;
-}
-
-.plate__steps li {
-  border-bottom: 1px solid var(--line);
-  counter-increment: step;
+/* Still plates (the sandbox corgi) show a single transparent PNG, letterboxed. */
+.plate__frames--still {
+  align-items: center;
+  aspect-ratio: 1;
+  background: radial-gradient(circle at 50% 55%, var(--accent-soft) 0%, transparent 62%), var(--surface-canvas);
   display: grid;
-  gap: 0.15rem 1rem;
-  grid-template-columns: 2rem minmax(0, 1fr);
-  padding: 0.85rem 0;
+  justify-items: center;
 }
 
-.plate__steps li::before {
+.plate__still {
+  height: auto;
+  image-rendering: auto;
+  width: 82%;
+}
+
+/* ---- Full-width sections: the five steps and the four models ---- */
+
+.steps,
+.models {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3.5rem);
+  margin-top: clamp(4rem, 8vw, 7rem);
+  padding-top: 2.5rem;
+  scroll-margin-top: 5.5rem;
+}
+
+/* The steps follow the coin band directly: no second rule, and a shorter breath. */
+.steps {
+  border-top: 0;
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+  padding-top: 0;
+}
+
+.steps__head {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+  margin: 0 auto;
+  max-width: 44rem;
+  text-align: center;
+}
+
+.section-numeral {
   color: var(--accent-text);
-  content: counter(step, decimal-leading-zero);
   font-family: var(--font-code);
   font-size: 0.75rem;
-  grid-row: 1 / span 2;
-  padding-top: 0.25rem;
+  letter-spacing: 0.08em;
 }
 
-.plate__steps strong {
+.steps__head h2 {
   color: var(--ink-strong);
-  font-weight: 560;
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 4vw, 3.25rem);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  margin: 0;
+  text-wrap: balance;
 }
 
-.plate__steps span {
+.steps__head p {
   color: var(--ink-default);
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/*
+ * Level map: five compact cards scattered down a tall box, joined by a thick
+ * dashed path. Positions come from the markup (inline left/top percentages);
+ * the SVG is stretched to the same box, so its path lands on the same points.
+ */
+.steps__map {
+  aspect-ratio: 16 / 7.5;
+  margin: 0 auto;
+  position: relative;
+  width: 100%;
+}
+
+.steps__path {
+  fill: none;
+  height: 100%;
+  inset: 0;
+  overflow: visible;
+  position: absolute;
+  stroke: var(--accent);
+  stroke-dasharray: 14 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 5px;
+  vector-effect: non-scaling-stroke;
+  width: 100%;
+}
+
+.steps__path path {
+  vector-effect: non-scaling-stroke;
+}
+
+.steps__list {
+  height: 100%;
+  inset: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  width: 100%;
+}
+
+/*
+ * A step card: a small near-square tile, numeral on top, text below. On hover
+ * the card slides a touch to the right, warms to the soft accent, and a field
+ * of orange pixels surfaces along its right edge.
+ */
+.step-card {
+  align-content: start;
+  background:
+    linear-gradient(160deg, var(--surface-raised) 0%, color-mix(in oklch, var(--surface-raised) 70%, var(--accent-soft)) 100%);
+  border: 1px solid color-mix(in oklch, var(--accent) 30%, var(--line));
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.6) inset,
+    0 14px 34px -22px rgb(120 60 20 / 0.45);
+  display: grid;
+  gap: 0.75rem;
+  overflow: hidden;
+  padding: 1.125rem 1.25rem 1.25rem;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  transition:
+    transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    background-color 320ms ease,
+    border-color 320ms ease,
+    box-shadow 320ms ease;
+  width: clamp(13rem, 18vw, 16rem);
+}
+
+/* A short orange pixel strip along the top edge marks every tile at rest. */
+.step-card::before {
+  background-image: conic-gradient(from 90deg at 50% 50%, var(--accent) 25%, transparent 0);
+  background-size: 8px 8px;
+  content: "";
+  height: 8px;
+  inset: 0 0 auto 0;
+  -webkit-mask-image: linear-gradient(to right, #000 35%, transparent);
+  mask-image: linear-gradient(to right, #000 35%, transparent);
+  opacity: 0.7;
+  position: absolute;
+  transition: opacity 320ms ease;
+}
+
+.step-card__number {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 3.5vw, 3.25rem);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  transition: color 320ms ease;
+}
+
+.step-card__body {
+  display: grid;
+  gap: 0.35rem;
+  position: relative;
+  z-index: 1;
+}
+
+.step-card__body strong {
+  color: var(--ink-strong);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.step-card__body span {
+  color: var(--ink-default);
+  font-size: 0.875rem;
   line-height: 1.5;
 }
 
-.plate__models {
-  border-top: 1px solid var(--line);
+.step-card__pixels {
+  background-image: conic-gradient(from 90deg at 50% 50%, var(--accent) 25%, transparent 0);
+  background-size: 10px 10px;
+  inset: 0 0 0 auto;
+  -webkit-mask-image: linear-gradient(to left, rgb(0 0 0 / 0.55), transparent);
+  mask-image: linear-gradient(to left, rgb(0 0 0 / 0.55), transparent);
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(1.5rem);
+  transition:
+    opacity 380ms ease,
+    transform 380ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  width: 42%;
+}
+
+.step-card:hover,
+.step-card:focus-within {
+  background: linear-gradient(160deg, var(--surface-raised) 0%, var(--accent-soft) 100%);
+  border-color: color-mix(in oklch, var(--accent) 60%, var(--line));
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.6) inset,
+    0 22px 44px -22px rgb(255 92 0 / 0.5);
+  transform: translate(calc(-50% + 0.75rem), calc(-50% - 0.25rem));
+}
+
+.step-card:hover::before,
+.step-card:focus-within::before {
+  opacity: 1;
+}
+
+.step-card:hover .step-card__number,
+.step-card:focus-within .step-card__number {
+  color: var(--accent);
+}
+
+.step-card:hover .step-card__pixels,
+.step-card:focus-within .step-card__pixels {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* The models section sits on the shared measure: same edges as the plates, four narrower cards inside. */
+.models {
+  margin-inline: calc(-1 * var(--measure-bleed));
+  padding-inline: var(--measure-edge);
+  padding-top: 0;
+}
+
+/* Ink rules share one width: the measure, inset the same on every section. */
+.models::before,
+.landing__close::before {
+  background: var(--ink-strong);
+  content: "";
+  display: block;
+  height: 1px;
+  margin-bottom: 2.5rem;
+  width: 100%;
+}
+
+/* Model cards: four across, name and weights up front, the rest on hover. */
+.models__grid {
+  align-items: start;
   display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   list-style: none;
-  margin: 0.25rem 0 0;
+  margin: 0;
   padding: 0;
 }
 
-/* Direct children only: the allocation legend nested inside is its own list. */
-.plate__models > li {
-  border-bottom: 1px solid var(--line);
+.model-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem 1.375rem 1.25rem;
+  position: relative;
+  transition:
+    transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    border-color 320ms ease,
+    box-shadow 320ms ease;
+}
+
+.model-card::before {
+  background-image: conic-gradient(from 90deg at 50% 50%, var(--accent) 25%, transparent 0);
+  background-size: 8px 8px;
+  content: "";
+  height: 8px;
+  inset: 0 0 auto 0;
+  -webkit-mask-image: linear-gradient(to right, #000 30%, transparent);
+  mask-image: linear-gradient(to right, #000 30%, transparent);
+  opacity: 0.55;
+  position: absolute;
+  transition: opacity 320ms ease;
+}
+
+.model-card:hover,
+.model-card:focus-within,
+.model-card:focus-visible {
+  border-color: color-mix(in oklch, var(--accent) 45%, var(--line));
+  box-shadow: 0 18px 40px -24px rgb(60 40 20 / 0.35);
+  outline: none;
+  transform: translateY(-4px);
+}
+
+.model-card:hover::before,
+.model-card:focus-within::before,
+.model-card:focus-visible::before {
+  opacity: 1;
+}
+
+.model-card__head {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.model-card__risk {
+  background: var(--accent-soft);
+  border-radius: var(--radius-pill);
+  color: var(--accent-text);
+  font-family: var(--font-code);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.6rem;
+  text-transform: uppercase;
+}
+
+.model-card__head strong {
+  color: var(--ink-strong);
+  font-family: var(--font-display);
+  font-size: 1.625rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+/* The shared allocation bar, scaled down to fit a card. */
+.model-card__bar {
+  font-size: 0.75rem;
+}
+
+.model-card__bar .allocation__bar {
+  height: 0.5rem;
+}
+
+.model-card__bar .allocation__legend {
+  display: none;
+}
+
+.model-card__more {
   display: grid;
   gap: 0.75rem;
-  padding: 1rem 0;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(6px);
+  transition:
+    max-height 420ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 320ms ease,
+    transform 320ms ease;
 }
 
-.plate__model-head {
-  align-items: baseline;
-  display: flex;
-  gap: 0.25rem 1rem;
-  justify-content: space-between;
+.model-card:hover .model-card__more,
+.model-card:focus-within .model-card__more,
+.model-card:focus-visible .model-card__more {
+  max-height: 22rem;
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.plate__model-head strong {
+.model-card__more dl {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding-top: 0.75rem;
+}
+
+.model-card__more dt {
+  color: var(--ink-muted);
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.model-card__more dd {
   color: var(--ink-strong);
+  font-size: 0.9375rem;
   font-weight: 560;
+  margin: 0.15rem 0 0;
 }
 
-.plate__model-head span {
+.model-card__legs {
+  display: grid;
+  gap: 0.3rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.model-card__legs li {
+  border-bottom: 1px dotted var(--line);
+  color: var(--ink-default);
+  display: flex;
   font-size: 0.8125rem;
+  justify-content: space-between;
+  padding-bottom: 0.3rem;
+}
+
+.model-card__legs li:last-child {
+  border-bottom: 0;
+}
+
+.model-card__hint {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
 }
 
 .plate__compare {
-  align-items: center;
+  align-items: start;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   display: grid;
@@ -559,17 +1072,19 @@ code {
 }
 
 .plate__providers > div {
+  align-items: baseline;
   border-bottom: 1px solid var(--line);
   display: grid;
   gap: 0.15rem 1.5rem;
-  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
   padding: 0.75rem 0;
 }
 
 .plate__providers dt {
   color: var(--ink-strong);
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
   font-weight: 560;
+  line-height: 1.35;
 }
 
 .plate__providers dd {
@@ -585,12 +1100,13 @@ code {
 
 /* The rule spans the page like every other divider; only the measure is narrow. */
 .landing__close {
-  border-top: 1px solid var(--ink-strong);
   display: grid;
   gap: 1.5rem;
   justify-items: start;
+  margin-inline: calc(-1 * var(--measure-bleed));
   margin-top: clamp(4rem, 8vw, 7rem);
-  padding-top: 2.5rem;
+  padding-inline: var(--measure-edge);
+  padding-top: 0;
 }
 
 .landing__close > * {
@@ -648,23 +1164,25 @@ code {
   display: grid;
   gap: 1rem 2rem;
   grid-template-columns: auto minmax(0, 1fr);
-  padding: 2rem clamp(1.25rem, 3vw, 3rem) 3rem;
+  padding: 2rem var(--page-gutter) 3rem;
 }
 
 .landing__footer nav {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1.5rem;
   justify-content: flex-end;
 }
 
-.landing__footer nav a {
+.landing__footer nav a:not(.button) {
   color: var(--ink-default);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+  line-height: 1.2;
   text-decoration: none;
 }
 
-.landing__footer nav a:hover {
+.landing__footer nav a:not(.button):hover {
   color: var(--ink-strong);
   text-decoration: underline;
   text-underline-offset: 0.3em;
@@ -746,6 +1264,11 @@ code {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .coin-marquee__track,
+  .step-card,
+  .step-card__pixels,
+  .model-card,
+  .model-card__more,
   .landing__horizon-frame--b,
   .plate__frame--b,
   .plate[data-inview="true"] .plate__rule,
@@ -761,8 +1284,24 @@ code {
     opacity: 1;
   }
 
-  .landing__burger-line {
+  .landing__burger-line,
+  .step-card,
+  .step-card__number,
+  .step-card__pixels,
+  .model-card,
+  .model-card::before,
+  .model-card__more {
     transition: none;
+  }
+
+  .step-card:hover,
+  .step-card:focus-within {
+    transform: translate(-50%, -50%);
+  }
+
+  .model-card:hover,
+  .model-card:focus-within {
+    transform: none;
   }
 }
 
@@ -1735,13 +2274,62 @@ code {
     grid-template-columns: 1fr;
   }
 
-  .entry__art {
-    min-height: 18rem;
+  .entry__art,
+  .entry__hero-art {
+    min-height: clamp(16rem, 42vh, 24rem);
   }
 
-  .entry__facts {
-    gap: 1.5rem 1.5rem;
-    grid-template-columns: repeat(2, 1fr);
+  .hero-art__corgi {
+    width: min(80%, 26rem);
+  }
+
+  .entry__hero .entry__copy,
+  .entry__hero--auth .entry__copy--form {
+    margin-left: 0;
+    margin-top: 0;
+  }
+
+  .entry__hero .entry__hero-art {
+    justify-self: center;
+  }
+
+  .entry__hero .hero-art__corgi {
+    width: min(88%, 28rem);
+  }
+
+  .entry__hero::before {
+    background: color-mix(in oklch, var(--surface-canvas) 55%, transparent);
+  }
+
+  .models__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .steps__map {
+    aspect-ratio: auto;
+  }
+
+  .steps__path {
+    display: none;
+  }
+
+  .steps__list {
+    display: grid;
+    gap: 0.75rem;
+    inset: auto;
+    position: static;
+  }
+
+  .step-card {
+    inset: auto !important;
+    position: relative;
+    transform: none;
+    width: 100%;
+  }
+
+  .step-card:hover,
+  .step-card:focus-within {
+    transform: translateX(0.35rem);
   }
 
   .plate__model-head {
@@ -1771,7 +2359,7 @@ code {
     box-shadow: var(--shadow-floating);
     display: grid;
     left: 0;
-    padding: 0.25rem clamp(1.25rem, 3vw, 3rem) 1rem;
+    padding: 0.25rem var(--align-left) 1rem;
     position: absolute;
     right: 0;
     top: 100%;
@@ -1800,11 +2388,24 @@ code {
     padding-top: 2rem;
   }
 
+  .models,
+  .landing__close {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .models::before,
+  .landing__close::before {
+    margin-bottom: 2rem;
+  }
+
   .plate,
   .plate[data-flip] {
     gap: 1.75rem;
     grid-template-columns: 1fr;
+    margin-inline: 0;
     margin-top: 4rem;
+    padding-inline: 0;
     padding-top: 1.75rem;
     scroll-margin-top: 5rem;
   }

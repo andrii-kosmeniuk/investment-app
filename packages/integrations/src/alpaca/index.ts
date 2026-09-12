@@ -170,10 +170,11 @@ export class AlpacaBrokerAdapter implements BrokerPort {
     });
   }
 
-  async *streamTradeEvents(cursor?: string): AsyncIterable<ProviderEvent> {
+  async *streamTradeEvents(cursor?: string, signal?: AbortSignal): AsyncIterable<ProviderEvent> {
     const url = new URL("/v2/events/trades", this.#config.baseUrl);
     if (cursor) url.searchParams.set("since_id", cursor);
     const response = await fetch(url, {
+      ...(signal ? { signal } : {}),
       headers: {
         accept: "text/event-stream",
         "APCA-API-KEY-ID": this.#config.key,

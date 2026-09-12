@@ -1,4 +1,4 @@
-import { InsufficientFundsError, OrderNotPermittedError } from "../errors.js";
+import { InsufficientFundsError, OrderNotPermittedError, isBrokerOutage } from "../errors.js";
 import type {
   ApprovalRepository,
   BrokerPort,
@@ -42,6 +42,8 @@ export interface PlaceOrderDeps {
 
 export type PlaceOrderResult =
   | { readonly status: "submitted"; readonly orderId: string; readonly providerOrderId: string }
+  /** Broker unreachable: recorded as `approved` and re-sent by the worker (ADR-0007). */
+  | { readonly status: "queued"; readonly orderId: string }
   | { readonly status: "pending_approval"; readonly approvalId: string };
 
 /**
@@ -93,15 +95,35 @@ export async function placeOrder(
   }
 
   const clientOrderId = deps.ids.next();
-  const submitted = await deps.broker.submitNotionalOrder({
-    accountId: customer.brokerAccountId,
-    clientOrderId,
-    symbol: command.symbol,
-    notionalCents: command.notionalCents,
-    side: command.side,
-  });
-
   const orderId = deps.ids.next();
+  let submitted: Awaited<ReturnType<BrokerPort["submitNotionalOrder"]>>;
+  try {
+    submitted = await deps.broker.submitNotionalOrder({
+      accountId: customer.brokerAccountId,
+      clientOrderId,
+      symbol: command.symbol,
+      notionalCents: command.notionalCents,
+      side: command.side,
+    });
+  } catch (error) {
+    // A 4xx is the broker's answer and surfaces to the caller. A 5xx or a
+    // dead connection is not an answer: keep the validated order as
+    // `approved` with no provider id so the worker can re-send it, and the
+    // customer sees "queued" rather than a half-done model change.
+    if (!isBrokerOutage(error)) throw error;
+    await deps.orders.create({
+      id: orderId,
+      customerId: command.customerId,
+      clientOrderId,
+      providerOrderId: null,
+      symbol: command.symbol,
+      side: command.side,
+      state: "approved",
+      requestedNotionalCents: command.notionalCents,
+    });
+    return { status: "queued", orderId };
+  }
+
   await deps.orders.create({
     id: orderId,
     customerId: command.customerId,

@@ -1,11 +1,13 @@
 import { allocateLargestRemainder } from "@corgi/domain";
-import { ConfirmationRequiredError, NotFoundError, NotPermittedError } from "../errors.js";
-import type { ModelCatalog, PortfolioAssignmentRepository } from "../ports.js";
+import { ConfirmationRequiredError, NotFoundError, NotPermittedError, OrdersInFlightError } from "../errors.js";
+import type { ModelCatalog, OrderListing, PortfolioAssignmentRepository } from "../ports.js";
 import { type PlaceOrderDeps, placeOrder } from "./place-order.js";
 
 export interface ChooseModelDeps extends PlaceOrderDeps {
   readonly models: ModelCatalog;
   readonly portfolios: PortfolioAssignmentRepository;
+  /** Open orders per customer; a model change waits while any are in flight. */
+  readonly orderListing: OrderListing;
 }
 
 export interface ChooseModelCommand {
@@ -19,7 +21,8 @@ export interface ChooseModelCommand {
 export interface InvestmentLeg {
   readonly symbol: string;
   readonly notionalCents: bigint;
-  readonly status: "submitted";
+  /** `queued`: the broker was unreachable; the worker re-sends it (ADR-0007). */
+  readonly status: "submitted" | "queued";
 }
 
 export interface ChooseModelResult {
@@ -46,6 +49,16 @@ export async function chooseModel(
   }
   const model = await deps.models.findByCode(command.modelCode);
   if (!model) throw new NotFoundError(`unknown model: ${command.modelCode}`);
+
+  // Available-to-trade only shrinks once a fill books the unsettled buy, so a
+  // second choice while orders are queued or open would spend the same cash
+  // twice. One executed switch at a time (ASSUMPTIONS: model change mid-day).
+  const inFlight = await deps.orderListing.listOpenForCustomer(command.customerId);
+  if (inFlight.length > 0) {
+    throw new OrdersInFlightError(
+      `${inFlight.length} order${inFlight.length === 1 ? " is" : "s are"} still with the broker; choose again once they have filled`,
+    );
+  }
 
   const existing = await deps.portfolios.findForCustomer(command.customerId);
   const { accountId: brokerAccountId } = await deps.broker.ensureAccount(
@@ -91,10 +104,10 @@ export async function chooseModel(
       requestedByActorId: command.requestedByActorId,
       customerConfirmed: command.confirmed,
     });
-    if (placed.status !== "submitted") {
+    if (placed.status === "pending_approval") {
       throw new Error(`unexpected order routing for a confirmed customer order: ${placed.status}`);
     }
-    legs.push({ symbol: leg.symbol, notionalCents: leg.notionalCents, status: "submitted" });
+    legs.push({ symbol: leg.symbol, notionalCents: leg.notionalCents, status: placed.status });
   }
   return { modelCode: model.code, legs };
 }

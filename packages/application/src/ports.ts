@@ -72,7 +72,8 @@ export interface BrokerPort {
     side: "buy" | "sell";
   }): Promise<{ providerOrderId: string; status: OrderState }>;
   getPositions(accountId: string): Promise<readonly BrokerPosition[]>;
-  streamTradeEvents(cursor?: string): AsyncIterable<ProviderEvent>;
+  /** Long-lived SSE stream; `signal` lets the consumer close it on shutdown. */
+  streamTradeEvents(cursor?: string, signal?: AbortSignal): AsyncIterable<ProviderEvent>;
 }
 
 export interface BrokerPosition {
@@ -461,6 +462,8 @@ export interface OrderRecord {
   readonly side: "buy" | "sell";
   readonly state: OrderState;
   readonly cumulativeFilledUnitsMicro: bigint;
+  /** Dollar amount requested; null for legacy quantity orders. */
+  readonly requestedNotionalCents?: bigint | null;
 }
 
 export interface OrderRepository {
@@ -477,6 +480,13 @@ export interface OrderRepository {
   findById(id: string): Promise<OrderRecord | null>;
   findByClientOrderId(clientOrderId: string): Promise<OrderRecord | null>;
   findByProviderOrderId(providerOrderId: string): Promise<OrderRecord | null>;
+  /**
+   * Orders accepted by us but not yet by the broker (`approved`, no provider
+   * id): the broker was unreachable when they were placed (ADR-0007).
+   */
+  listAwaitingSubmission(limit: number): Promise<readonly OrderRecord[]>;
+  /** The broker accepted a previously queued order. */
+  markSubmitted(id: string, providerOrderId: string): Promise<void>;
   recordFill(input: {
     orderId: string;
     externalId: string;

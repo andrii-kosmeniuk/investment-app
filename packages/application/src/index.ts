@@ -18,6 +18,7 @@ export * from "./operations/settlement.js";
 export * from "./investing/place-order.js";
 export * from "./investing/apply-fill.js";
 export * from "./investing/choose-model.js";
+export * from "./investing/submit-queued-orders.js";
 export * from "./auth/credentials.js";
 export * from "./auth/sign-in.js";
 export * from "./auth/sign-up.js";

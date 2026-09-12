@@ -120,7 +120,8 @@ export async function createDepositAction(_previous: ActionResult | null, formDa
 }
 
 export interface ChooseModelResult {
-  readonly legs: readonly { symbol: string; notionalCents: string }[];
+  /** `status` is absent on a confirmation preview; `queued` means the broker was down and the worker re-sends. */
+  readonly legs: readonly { symbol: string; notionalCents: string; status?: "submitted" | "queued" }[];
   readonly placed: boolean;
 }
 

@@ -48,8 +48,8 @@ export function LandingNav() {
 
       {/* One primary action per decision area: the orange pill lives in the hero, not here. */}
       <div className="landing__auth">
-        <Link href="/sign-up" className="landing__auth-link">
-          Create an account
+        <Link href="/sign-up" className="button" data-variant="primary">
+          <span className="button__label">Create an account</span>
         </Link>
         <Link href="/sign-in" className="entry__signin">
           Sign in
@@ -80,8 +80,8 @@ export function LandingNav() {
         <Link href="/sign-in" onClick={close}>
           Sign in
         </Link>
-        <Link href="/sign-up" onClick={close} className="landing__menu-cta">
-          Create an account
+        <Link href="/sign-up" onClick={close} className="button" data-variant="primary">
+          <span className="button__label">Create an account</span>
         </Link>
       </nav>
     </header>

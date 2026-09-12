@@ -15,11 +15,9 @@ export const LANDING_SECTIONS = [
 ] as const;
 
 /** Frames live in `apps/web/public/plates/`; provenance is embedded in each PNG's tEXt chunk. */
-export const FIELD_GUIDE: Readonly<Record<"stone" | "garden" | "clouds" | "hills", PlateFigure>> = {
-  stone: { stem: "stone", subject: "River stones", width: 1200, height: 1600 },
-  garden: { stem: "garden", subject: "Raked garden", width: 1200, height: 1600 },
+export const FIELD_GUIDE: Readonly<Record<"clouds" | "garden", PlateFigure>> = {
   clouds: { stem: "clouds", subject: "Cloud bank", width: 1200, height: 1600 },
-  hills: { stem: "hills", subject: "Hills in mist", width: 1200, height: 1600 },
+  garden: { stem: "garden", subject: "Raked garden", width: 1200, height: 1600 },
 };
 
 export const ONBOARDING_STEPS: readonly { readonly title: string; readonly detail: string }[] = [

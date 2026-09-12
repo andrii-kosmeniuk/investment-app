@@ -4,10 +4,13 @@ import {
   EmailTakenError,
   NotFoundError,
   NotPermittedError,
+  type OpenOrder,
+  OrdersInFlightError,
   ValidationError,
   type CustomerRecord,
   chooseModel,
   createDeposit,
+  submitQueuedOrders,
   hashPassword,
   linkBankAccount,
   placeOrder,
@@ -274,11 +277,64 @@ describe("investing — choose a model", () => {
       confirmationThresholdCents: 100_000n,
       models: new FakeModels([balancedGrowth]),
       portfolios: new FakePortfolios([{ customerId: "cust-1", modelId: "old", brokerAccountId: "acct-1", status: "open" }]),
+      orderListing: { listOpenForCustomer: () => Promise.resolve([] as OpenOrder[]) },
       ...overrides,
     };
   }
 
   const command = { customerId: "cust-1", modelCode: "balanced-growth-v1", requestedByActorId: "cust-1", confirmed: false };
+
+  /** A broker whose order endpoint is down (Alpaca sandbox `500 50010000`), with a switch to bring it back. */
+  class OutageBroker extends FakeBroker {
+    down = true;
+    override submitNotionalOrder(input: Parameters<FakeBroker["submitNotionalOrder"]>[0]) {
+      if (this.down) return Promise.reject(Object.assign(new Error("alpaca returned HTTP 500"), { status: 500 }));
+      return super.submitNotionalOrder(input);
+    }
+  }
+
+  it("queues every leg as `approved` when the broker answers 5xx, then the worker re-sends them (ADR-0007)", async () => {
+    const broker = new OutageBroker();
+    const d = deps({ broker });
+    const result = await chooseModel(d, command);
+
+    expect(result.legs.map((leg) => leg.status)).toEqual(["queued", "queued", "queued"]);
+    expect(d.portfolios.assignments.get("cust-1")).toMatchObject({ modelId: "model-1" });
+    const queued = await d.orders.listAwaitingSubmission(10);
+    expect(queued.map((o) => [o.symbol, o.state, o.providerOrderId, o.requestedNotionalCents])).toEqual([
+      ["VTI", "approved", null, 59_400n],
+      ["VXUS", "approved", null, 18_810n],
+      ["BND", "approved", null, 20_790n],
+    ]);
+
+    // Still down: nothing moves, and we stop after the first failure instead of hammering.
+    const first = await submitQueuedOrders({ orders: d.orders, customers: d.customers, broker });
+    expect(first).toMatchObject({ attempted: 3, submitted: 0, stillQueued: 1, rejected: [] });
+
+    broker.down = false;
+    const second = await submitQueuedOrders({ orders: d.orders, customers: d.customers, broker });
+    expect(second).toMatchObject({ attempted: 3, submitted: 3, stillQueued: 0 });
+    expect(broker.submitted.map((o) => o.symbol)).toEqual(["VTI", "VXUS", "BND"]);
+    expect(await d.orders.listAwaitingSubmission(10)).toEqual([]);
+    const vti = await d.orders.findByProviderOrderId("prov-id-1");
+    expect(vti).toMatchObject({ symbol: "VTI", state: "submitted" });
+  });
+
+  it("does not swallow a broker rejection (4xx) as an outage", async () => {
+    const broker = new FakeBroker();
+    broker.submitNotionalOrder = () => Promise.reject(Object.assign(new Error("alpaca returned HTTP 403"), { status: 403 }));
+    const d = deps({ broker });
+    await expect(chooseModel(d, command)).rejects.toThrow("HTTP 403");
+    expect(await d.orders.listAwaitingSubmission(10)).toEqual([]);
+  });
+
+  it("refuses a second model choice while orders are queued or open, so cash is never spent twice", async () => {
+    const open: OpenOrder[] = [{ id: "o-1", symbol: "VTI", side: "buy", requestedNotionalCents: 100n, state: "approved" }];
+    const d = deps({ orderListing: { listOpenForCustomer: () => Promise.resolve(open) } });
+    await expect(chooseModel(d, command)).rejects.toBeInstanceOf(OrdersInFlightError);
+    expect(d.broker.submitted).toEqual([]);
+    expect(d.portfolios.assignments.get("cust-1")).toMatchObject({ modelId: "old" });
+  });
 
   it("splits investable cash after the buffer so the legs reconcile to the cent", async () => {
     const d = deps();

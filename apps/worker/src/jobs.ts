@@ -65,8 +65,8 @@ export function scheduleJobs(
           try {
             await job.run(signal);
             logger.info({ job: job.name, durationMs: Date.now() - startedAt }, "job completed");
-          } catch (error) {
-            logger.error({ job: job.name, error }, "job failed");
+          } catch (err) {
+            logger.error({ job: job.name, err }, "job failed");
           }
         },
       ),

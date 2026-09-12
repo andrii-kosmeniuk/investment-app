@@ -17,6 +17,8 @@ function failureCopy(code: string | null, error: string | null, model: { name: s
   switch (code) {
     case "alpaca_not_configured":
       return "Order placement is not available in this environment yet.";
+    case "orders_in_flight":
+      return "Orders from your last choice are still with the broker. Your model can change again once they have filled or been cancelled.";
     case "provider_unavailable":
       return model?.saved
         ? `${model.name} is now your model, but our broker did not accept the orders, so your cash has not been invested yet. Nothing was bought; try again in a moment.`
@@ -66,12 +68,17 @@ export function ModelPicker({
         return;
       }
       setPlan(null);
+      const legs = result.data.legs;
+      const queued = legs.filter((leg) => leg.status === "queued").length;
+      const plural = legs.length === 1 ? "" : "s";
       setOutcome({
-        tone: result.data.legs.length > 0 ? "positive" : "info",
+        tone: legs.length > 0 ? (queued > 0 ? "info" : "positive") : "info",
         text:
-          result.data.legs.length > 0
-            ? `${result.data.legs.length} buy order${result.data.legs.length === 1 ? "" : "s"} sent to the broker. Units appear as each order fills.`
-            : "Model saved. Nothing was invested because you have no settled cash yet.",
+          legs.length === 0
+            ? "Model saved. Nothing was invested because you have no settled cash yet."
+            : queued > 0
+              ? `${legs.length} buy order${plural} accepted. Our broker is not answering right now, so ${queued === legs.length ? "they are" : `${queued} of them are`} held and will be sent automatically the moment it responds. Nothing is lost; your cash stays yours until each order fills.`
+              : `${legs.length} buy order${plural} sent to the broker. Units appear as each order fills.`,
       });
     });
 
