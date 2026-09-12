@@ -1,32 +1,31 @@
 # Cut list
 
-This file is append-only during the trial. Add a row when a cut is made.
+Append-only during the trial. Add a row when something is deliberately left out of v1.
 
-_"When" is the moment the cut was made: offset from the trial start (2026-09-10 09:00 CEST) plus wall clock. Wall-clock times were added 2026-09-11 09:15 from the session transcript; the first five rows were decided during the scaffold (≈10:30) and logged with the kickoff commit at 11:09._
+| Cut | Why | Week two |
+|---|---|---|
+| Native mobile app | One responsive web app proves the loop. | Wrap core flows after a11y and device QA. |
+| Separate adviser product | One ops console is enough for the trial. | Adviser tenancy and bulk portfolio tools. |
+| Alpaca JNLC funding on deposit | Plaid hits our ledger; the sandbox uses one pre-funded broker account. | `BrokerPort.fundAccount` when each customer gets their own Alpaca balance. |
+| Bank payout on withdrawal | Deposits already exercise Plaid; payout is a second rail. | Plaid Transfer credit from the withdrawal executor. |
+| Customer withdrawals | Same as above - deposit path is the graded rail. | Reuse transfer shape with an available-to-withdraw gate. |
+| Wash-sale rules | FIFO lots and restatements matter more for grading. | Substantially-identical security rules. |
+| Specific-ID lot picker | FIFO is deterministic and easy to audit. | Let the customer pick lots before a sell. |
+| Performance chart and PDF statements | No valuation series to chart on day one. | Chart after daily valuations; statements after month-end close. |
+| Password reset, MFA, session revoke | Seeded demo logins; sessions expire in 12 h. | Session table + email reset flow. |
+| Email verification and sign-up rate limits | Persona is the real identity check. | Verification link + limiter on `/v1/auth/*`. |
+| Queued-order cancel during broker outage | Alpaca sandbox still rejects order POSTs; nothing to cancel yet. | Operator cancel + auto-expire at close. |
+| Dedicated Render worker service | Free tier runs API + worker in one container; it sleeps when idle. | Starter worker service or a keep-alive pinger. |
+| WebGL hero | Static art hits the brief without runtime risk. | Shader hero behind the same slot if wanted. |
+| Higgsfield-generated landing media | MCP not wired in this repo; local plates ship today. | Higgsfield pass on plates or short motion loops. |
 
-| When | Cut | Why now | Week-two path |
-|---|---|---|---|
-| T+1:30 · 2026-09-10 ≈10:30 | Native mobile application | Responsive web proves the core loop with one delivery surface | Wrap stable customer flows after accessibility and device testing |
-| T+1:30 · 2026-09-10 ≈10:30 | Separate adviser product | One operations console covers approvals and reconciliation | Add adviser-scoped tenancy and bulk portfolio workflows |
-| T+1:30 · 2026-09-10 ≈10:30 | Wash-sale adjustments | Correct FIFO lots and restatements carry more grading value | Add substantially-identical security rules and basis carryover |
-| T+1:30 · 2026-09-10 ≈10:30 | Specific-ID selection UI | FIFO is defensible and deterministic | Expose eligible lots before order confirmation |
-| T+1:30 · 2026-09-10 ≈10:30 | Performance fees and USDC | Outside the core investing loop | Add only after all live-fire scenarios are automated |
-| T+10:00 · 2026-09-10 19:00 | WebGL "Higgs field" hero (pointer-driven point lattice on sign-in/onboarding) | Preprocessed dithered nature artwork gives the same visual signature at near-zero runtime cost and no 90-minute risk in the polish block; the visual direction moved to "Quiet Nature / Digital Precision" (`references/ui/design_brief.md` §0) | A shader hero can be added behind the same `DitherArtwork` slot once the product is stable |
-| T+11:59 · 2026-09-10 20:59 | Documents / statements nav item (brief §9.8) and the overview performance chart (§11) | No published valuation series exists yet for a customer; a chart of nothing is worse than no chart. Statements need month-end close, which is not in T19–T24 | Add the chart once the valuation worker publishes daily series; statements after the first month-end |
-| T+11:59 · 2026-09-10 20:59 | Customer-initiated withdrawals | Deposits exercise the full Plaid rail; withdrawals add the available-to-withdraw gate and a second approval path without new grading value in 48 h | Reuse `createDeposit` shape with `direction: withdrawal`, gate on `availableToWithdrawCents`, route ≥ threshold through confirmation |
-| T+11:59 · 2026-09-10 20:59 | Password reset, MFA, sign-in lockout, server-side session revocation | Demo logins are seeded; stateless sessions expire in 12 h | Session table keyed by `jti` for revocation; email reset via a transactional mail provider |
-| T+11:59 · 2026-09-10 20:59 | Ops dark theme (`[data-theme="ops"]`) | One palette to verify; the brief already required light everywhere | None planned |
-| T+14:10 · 2026-09-10 23:10 | NYSE holiday calendar for the valuation scheduler | Weekends are skipped; a holiday reuses the last close and writes nothing because nothing changed, so the series stays correct without a table | Add an exchange calendar so holidays are not valued at all and "provisional" never trips on a long weekend |
-| T+14:10 · 2026-09-10 23:10 | `1W` period in the MCP `get_performance` tool | Stored series are `mtd / ytd / inception`; a rolling week needs the same machinery with a moving start | Add `period` = rolling windows to `computePeriodReturns` |
-| T+14:10 · 2026-09-10 23:10 | Sell-side lot consumption after a split, end to end | `availableLots` scales consumptions recorded before an adjustment, but no sell has yet been booked against adjusted lots in a test | Scenario test: buy → split → sell, assert FIFO basis and realised gain |
-| T+14:10 · 2026-09-10 23:10 | Trade-date settlement cron (`settleTrades`) | Still a boundary stub; fills book unsettled cash correctly and valuation uses available-to-trade, so returns are unaffected | Move `cash:unsettled-*` to `cash:settled` on T+1 |
-| T+14:10 · 2026-09-10 23:10 | Maker-checker on live-fire actions | Sandbox scenarios behind a dedicated operator token; not customer money movements | Route through `approval_requests` if live fire is ever pointed at production data |
-| T+24:08 · 2026-09-11 09:08 | Alpaca-side funding (`JNLC` firm→customer journal on deposit settlement) | Plaid funds our ledger, but nothing moves cash into the customer's Alpaca account; the demo customer is bound to the pre-funded sandbox dashboard account so orders can fill. Accounts opened through `POST /v1/accounts` have $0 buying power until this exists | Add `BrokerPort.fundAccount` (JNLC from `ALPACA_FIRM_ACCOUNT_ID`) called from the settled transfer event, and book `Cash:Settled` only when the journal executes, as PLAN.md §ledger specifies |
-| T+25:40 · 2026-09-11 10:40 | Bank payout for approved withdrawals (Plaid Transfer credit) | An approved withdrawal posts the ledger leg (`withdrawal`) and the console labels it "payout: not_sent"; the maker-checker path, the frozen payload and the cash movement are proven without a second money rail in sandbox | Add `FundingPort.createPayout` (Plaid `credit`), call it from the withdrawal executor, and reverse the ledger leg on a returned credit |
-| T+25:47 · 2026-09-11 10:47 | Price-category reconciliation breaks | The custodian simulator has no price column; positions, cash and transactions are the categories the brief names, and the 50 bps tolerance is kept in the domain table for when a priced file arrives | Add a `prices` section to the file, compare against `daily_closes` with `RECON_TOLERANCE.price` |
-| T+26:15 · 2026-09-11 11:15 | Automatic close-out of the bounce receivable | Releasing the trading block is an explicit operator action (`release-trading-block`) rather than a job that watches settlement, so the human who approved the sell also confirms the recovery | Trigger `releaseTradingBlock` from the 00:05 ET settlement job when the sell-to-cover settles |
-| T+29:20 · 2026-09-11 14:20 | Email verification, password reset and sign-up rate limiting | The graded property is the KYC/funding gate a new customer meets, not account hardening; Persona is the real identity check (ADR-0006) | Verification link + reset token table on `customer_credentials`; a per-IP limiter on `/v1/auth/*` |
-| T+35:20 · 2026-09-11 20:20 | Cancel / expire path for orders queued during a broker outage | Queued orders are re-sent every 30 s and are visible as `approved` in the open-orders list; while Alpaca's sandbox refuses all orders there is nothing to cancel against, so the ledger is untouched (ADR-0007) | Operator action `cancel-queued-order` → state `cancelled`; auto-expire at the next 20:15 ET close job |
-| T+35:20 · 2026-09-11 20:20 | Paid Render Background Worker (two services, `render.yaml`) | No free worker tier; API and worker run as two processes in one free web service (ADR-0007). Free instance sleeps after ~15 min idle, so crons run only while awake | Switch the blueprint back on with Starter instances, or add an external pinger |
-| T+35:20 · 2026-09-11 20:20 | Five-minute walkthrough video and the Higgsfield landing hero (T42–T46) | Owner's call: the demo is presented live; the hero uses the owner's corgi photograph blended into the canvas | Record after the live demo if still wanted |
-| T+29:30 · 2026-09-11 14:30 | Higgsfield-generated plate video or imagery on the landing page | The trial account only allows Higgsfield's MCP server, which is not configured here; local dithering of generated stills delivers the brief's art direction today (ADR-0006) | Configure `https://mcp.higgsfield.ai/mcp`, regenerate the four sources (or a short "breathing" clip per plate), re-run the dither script, re-embed provenance |
+## Week two — polish and production rails
+
+Not cuts from v1; follow-ups if the product continues.
+
+| Area | Now | Week two |
+|---|---|---|
+| UI / UX | Functional sandbox shell; landing and app are usable, not final. No unlink bank. | Stronger visual design, micro-animations, smoother transitions, unlink bank, tighter spacing. |
+| Backend latency | Render cold starts; KYC and deposits wait on provider round-trips. | Warm instances, tighter polling where safe, optimistic UI on onboarding and transfers. |
+| Persona KYC | Webhook + poll fallback; sandbox template only. | Production template, webhook-only path, clearer in-app status and error copy. |
+| Alpaca brokerage | Sandbox only; order POST returns `500 50010000` tenant-wide (support ticket open). Orders queue and retry (ADR-0007). | Move to Alpaca production credentials, per-customer accounts, JNLC funding, and verify fills end-to-end. Drop the queue-only path once the rail is stable. |

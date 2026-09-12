@@ -26,7 +26,7 @@ export default async function ActivityPage() {
   return (
     <>
       <PageHeading title="Activity" eyebrow="Every entry on the books">
-        <p>Each row is a balanced journal entry. Expand one to see every leg — including the firm-side accounts — exactly as recorded.</p>
+        <p>Each row is a balanced journal entry. Expand one to see every leg - including the firm-side accounts - exactly as recorded.</p>
       </PageHeading>
 
       {rows.length === 0 ? (

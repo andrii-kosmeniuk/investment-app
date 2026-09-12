@@ -1,13 +1,13 @@
 # Decision log
 
-Chronological index. Entries are append-only; superseded decisions remain visible.
+Append-only index. Superseded decisions stay visible.
 
-- [0000 — Foundational architecture and financial invariants](decisions/0000-separate-deployables-shared-domain.md)
-- [0001 — Ledger write path and idempotent inbox](decisions/0001-ledger-write-path-and-idempotent-inbox.md)
-- [0002 — Provider integrations and the event-driven ledger](decisions/0002-provider-integrations-and-event-driven-ledger.md)
-- [0003 — Customer surface v1: sessions, funding, model investing, and the editorial orange design](decisions/0003-customer-surface-v1-sessions-funding-model-investing-and-the-editorial-orange-design.md)
-- [0004 — Valuation, returns and restatement](decisions/0004-valuation-returns-and-restatement.md)
-- [0005 — Reconciliation, approvals and the operator console](decisions/0005-reconciliation-approvals-and-the-operator-console.md)
-- [0006 — Self-serve registration, the public landing page, and onboarding prominence](decisions/0006-self-serve-registration-the-public-landing-page-and-onboarding-prominence.md)
-- [0007 — Queue orders through broker outages and run API plus worker in one container](decisions/0007-queue-orders-through-broker-outages-and-run-api-plus-worker-in-one-container.md)
-- [0008 — Advance Plaid sandbox deposits to settled from the worker](decisions/0008-advance-plaid-sandbox-deposits-to-settled-from-the-worker.md)
+- [0000 - Separate deployables](decisions/0000-separate-deployables.md)
+- [0001 - Ledger inbox](decisions/0001-ledger-inbox.md)
+- [0002 - Provider integrations](decisions/0002-provider-integrations.md)
+- [0003 - Customer surface](decisions/0003-customer-surface.md)
+- [0004 - Valuation returns](decisions/0004-valuation-returns.md)
+- [0005 - Ops console](decisions/0005-ops-console.md)
+- [0006 - Sign-up landing](decisions/0006-sign-up-landing.md)
+- [0007 - Broker outages](decisions/0007-broker-outages.md)
+- [0008 - Plaid settlement](decisions/0008-plaid-settlement.md)

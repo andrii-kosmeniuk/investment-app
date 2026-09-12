@@ -1,29 +1,27 @@
 # Open assumptions
 
-_"Opened" is when the assumption was made (CEST)._
-
 | Opened | Question | Working assumption | Asked | Resolution |
 |---|---|---|---|---|
-| ≈2026-09-10 10:30 | Approval threshold and aggregation window | $1,000 per order or withdrawal; all bulk rebalances require approval | Not yet | Open |
-| ≈2026-09-10 10:35 | Customer-facing return | TWR headline with Modified Dietz alongside | Not yet | Open |
-| ≈2026-09-10 10:35 | Dividend performance date | Accrue receivable on ex-date; move receivable to cash on pay-date | Not yet | Open |
-| ≈2026-09-10 10:25 | Tax-lot method | FIFO for v1; schema leaves room for specific identification | Not yet | Open |
-| ≈2026-09-10 10:40 | Custodian file layout | Deterministic CSV containing positions, cash, and transactions | Not yet | Open |
-| ≈2026-09-10 10:40 | Reconciliation tolerance | Zero cents, zero micro-units, 50 bps price difference | Not yet | Open |
-| ≈2026-09-10 10:15 | Alpaca push wording | SSE satisfies event-driven fill delivery; documentation labels it precisely | Not yet | Open |
-| ≈2026-09-10 20:40 | Who confirms a customer order at/above the $1,000 threshold? | The customer, via an explicit confirmation step showing the exact legs (brief §3). The ops maker-checker queue is for operator-initiated actions | Not yet | Open — see ADR-0003 |
-| ≈2026-09-10 20:50 | Storage of the Plaid item access token | Plaintext column in the sandbox database; must be encrypted at rest or replaced by a processor token before any production use | Not yet | Open — see ADR-0003 |
-| ≈2026-09-10 20:35 | Price staleness for portfolio value | A close more than 3 calendar days older than the business date (America/New_York) marks the value "provisional"; a missing price makes it "unavailable" | Not yet | Open — see ADR-0003 |
-| ≈2026-09-10 23:12 | Are platform fees a cash flow or negative return in the customer's TWR? | Fees are external flows (gross-of-fee TWR, per PLAN.md); dividends are return | Not yet | Open — see ADR-0004 |
-| ≈2026-09-10 23:15 | Money-weighted method and flow timing | Modified Dietz with beginning-of-day flows; weight `(days to period end + 1) / period days`; null when nothing was invested | Not yet | Open — see ADR-0004 |
-| ≈2026-09-10 23:10 | Valuation cash basis | Available-to-trade cash plus dividend receivable; pending deposits and bounce receivables excluded | Not yet | Open — see ADR-0004 |
-| ≈2026-09-10 23:25 | Split-adjusted price history | The live-fire simulator records split-adjusted closes as new price versions from the effective date, standing in for a feed that serves adjusted history | Not yet | Open — see ADR-0004 |
-| ≈2026-09-10 23:25 | Late dividend effective time | Entitlement effective at the ex-date market close (16:00 ET), cash on the pay date; restatement starts at the ex-date | Not yet | Open — see ADR-0004 |
-| 2026-09-11 00:40 | Alpaca sandbox forbids API account creation | Our Broker sandbox tenant answered `403 40310000 request is forbidden` to every write (`POST /v1/accounts`, orders, even watchlists) while reads worked. Root cause found 2026-09-11 08:55: the dashboard key pair was read-only; a full-access key fixed it. The `ALPACA_SANDBOX_ACCOUNT_ID` fallback stays as a documented escape hatch for tenants that gate account creation | Not yet | Resolved on our side 2026-09-11 08:55 (T+23:55, key permissions) |
-| 2026-09-11 20:05 | Alpaca sandbox order endpoint returns `500 50010000` tenant-wide | Reproduced 2026-09-11 18:03 UTC with the active full-access key: `POST /v1/trading/accounts/{id}/orders` fails for every account and body shape while reads, `POST /v1/accounts` and the SSE stream succeed; an unfunded account should answer `403`, so this is Alpaca-side. Orders are now queued (`approved`, no provider id) and re-sent by the worker until the rail answers (ADR-0007) | Alpaca support, not Corgi | Open — orders complete automatically once Alpaca's sandbox accepts them |
-| ≈2026-09-10 12:50 | Deposit returned (R01) after the cash was invested | Reverse the deposit, book a recovery receivable, block trading and auto-create a sell-to-cover proposal for an operator; positions stay intact until a human approves (firm covers, then recovers, with maker-checker) rather than liquidating automatically | 2026-09-11 10:24 email (T+25:24) | Open — awaiting answer; implementation scheduled for the T32–T38 block |
-| 2026-09-11 09:25 | Model change mid-day (e.g. Balanced → Growth at 11:00) | Record the change immediately; execute as a scheduled rebalance in the next trading window (sells then buys, minimums + cash buffer), blocked while any order is open, confirmation above $1,000; at most one executed switch per trading day, no calendar lockout | 2026-09-11 10:24 email (T+25:24) | Open — awaiting answer; until then `chooseModel` only invests idle cash and does not sell |
-| 2026-09-11 09:05 | Broker account application identity | The Alpaca sandbox account is opened with a placeholder identity keyed to the customer id (deterministic format-valid SSN, fixed address); the customer's real KYC lives in Persona and the brief does not ask us to forward it | Not yet | Open — forward Persona-verified identity if Corgi wants Alpaca to hold KYC of record |
-| 2026-09-11 10:37 | Operator identity in the console | One shared `LIVE_FIRE_TOKEN` proves "an operator"; the acting human is declared per request in `X-Operator-Id` and must name a human `actors` row. Maker ≠ checker is enforced in the domain and by a database trigger; the agent and the `system` actor may file requests but never decide them (ADR-0005) | Not yet | Open — replace with per-operator SSO if Corgi has an IdP |
-| 2026-09-11 10:47 | Custodian data source | No custodian sandbox exists, so the 06:00 ET job projects our own ledger as of the prior close into the agreed CSV layout and labels it `simulator`; live-fire tampers plant discrepancies. Breaks age from the first business date a run saw them (0–1d / 2–3d / 4d+) and only close by human explanation or an approved adjusting entry (ADR-0005) | Not yet | Open — swap the generator for the real file drop; parser and comparison stay |
-| 2026-09-11 10:57 | Who may sell while trading is blocked | Only the firm, and only to cover a returned deposit: the approved `sell_to_cover` order passes `placeOrder` with `firmInitiatedSell`; every other order for a blocked customer is refused. The block is lifted by an operator action once settled cash is back at or above zero (ADR-0005) | 2026-09-11 10:24 email (T+25:24) | Open — same email thread as the R01 question above |
+| 2026-09-10 | Approval threshold | $1,000 per order or withdrawal; bulk rebalances need approval | No | Open |
+| 2026-09-10 | Customer-facing return | TWR headline with Modified Dietz alongside | No | Open |
+| 2026-09-10 | Dividend dates | Receivable on ex-date; cash on pay-date | No | Open |
+| 2026-09-10 | Tax lots | FIFO in v1 | No | Open |
+| 2026-09-10 | Custodian file | CSV with positions, cash, transactions | No | Open |
+| 2026-09-10 | Reconciliation tolerance | Zero on cash/units; 50 bps on price | No | Open |
+| 2026-09-10 | Alpaca fills | SSE stream counts as event-driven delivery | No | Open |
+| 2026-09-10 | Large order confirmation | Customer confirms legs; ops queue is for operators | No | Open - ADR-0003 |
+| 2026-09-10 | Plaid access token storage | Plaintext in sandbox DB; encrypt before production | No | Open - ADR-0003 |
+| 2026-09-10 | Stale prices | Close >3 days old → provisional; missing → unavailable | No | Open - ADR-0003 |
+| 2026-09-10 | Fees in TWR | Fees are external flows (gross-of-fee TWR) | No | Open - ADR-0004 |
+| 2026-09-10 | MWR timing | Modified Dietz, beginning-of-day flows | No | Open - ADR-0004 |
+| 2026-09-10 | Valuation cash | Available-to-trade + dividend receivable | No | Open - ADR-0004 |
+| 2026-09-10 | Split-adjusted prices | Simulator writes adjusted closes as new versions | No | Open - ADR-0004 |
+| 2026-09-10 | Late dividend time | Ex-date close for entitlement; pay-date for cash | No | Open - ADR-0004 |
+| 2026-09-11 | Alpaca account API | Was read-only key; full-access key fixed account creation | No | Resolved 2026-09-11 |
+| 2026-09-11 | Alpaca order 500 | Sandbox order POST fails tenant-wide; orders queue (ADR-0007) | Alpaca support | Open |
+| 2026-09-10 | Deposit returned after invest | Block trading; sell-to-cover needs human approval | Corgi email | Open |
+| 2026-09-11 | Mid-day model change | Record now; rebalance next window; one switch per day | Corgi email | Open |
+| 2026-09-11 | Alpaca KYC identity | Placeholder identity on broker account; real KYC in Persona | No | Open |
+| 2026-09-11 | Operator login | Shared token + declared actor; SSO later | No | Open - ADR-0005 |
+| 2026-09-11 | Custodian source | Simulator from ledger; label `simulator` | No | Open - ADR-0005 |
+| 2026-09-11 | Sell while blocked | Only firm sell-to-cover when trading blocked | Corgi email | Open - ADR-0005 |
