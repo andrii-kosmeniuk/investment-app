@@ -46,44 +46,46 @@ export default async function RestatementsPage({ searchParams }: { readonly sear
       ) : audit.data!.rows.length === 0 ? (
         <p className="muted">No restatements. Every figure ever published still stands.</p>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th scope="col">Computed</th>
-              <th scope="col">Customer</th>
-              <th scope="col">Figure</th>
-              <th scope="col" className="numeric-col">Was</th>
-              <th scope="col" className="numeric-col">Now</th>
-              <th scope="col">Reason</th>
-            </tr>
-          </thead>
-          <tbody>
-            {audit.data!.rows.map((row) => (
-              <tr key={`${row.customerId}-${row.kind}-${row.asOfDate}-${row.period ?? ""}-${row.version}`}>
-                <td>
-                  <Timestamp value={row.computedAt} />
-                </td>
-                <td>
-                  <Link href={`/ops/restatements?customerId=${row.customerId}`} className="text-link numeric">
-                    {row.customerId.slice(0, 8)}…
-                  </Link>
-                </td>
-                <td>
-                  {row.kind === "valuation" ? `Value · ${row.asOfDate}` : `${PERIOD_LABEL[row.period ?? "inception"]} · to ${row.asOfDate}`}
-                  <span className="muted small"> v{row.version}</span>
-                </td>
-                <td className="numeric-col numeric">{figure(row.kind, row.from)}</td>
-                <td className="numeric-col numeric">{figure(row.kind, row.to)}</td>
-                <td>
-                  <span className="stack">
-                    <span>{restatementReasonLabel(row.reason)}</span>
-                    {row.reason ? <code className="muted small">{row.reason}</code> : null}
-                  </span>
-                </td>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Computed</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Figure</th>
+                <th scope="col" className="numeric-col">Was</th>
+                <th scope="col" className="numeric-col">Now</th>
+                <th scope="col">Reason</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {audit.data!.rows.map((row) => (
+                <tr key={`${row.customerId}-${row.kind}-${row.asOfDate}-${row.period ?? ""}-${row.version}`}>
+                  <td>
+                    <Timestamp value={row.computedAt} />
+                  </td>
+                  <td>
+                    <Link href={`/ops/restatements?customerId=${row.customerId}`} className="text-link numeric">
+                      {row.customerId.slice(0, 8)}…
+                    </Link>
+                  </td>
+                  <td>
+                    {row.kind === "valuation" ? `Value · ${row.asOfDate}` : `${PERIOD_LABEL[row.period ?? "inception"]} · to ${row.asOfDate}`}
+                    <span className="muted small"> v{row.version}</span>
+                  </td>
+                  <td className="numeric-col numeric">{figure(row.kind, row.from)}</td>
+                  <td className="numeric-col numeric">{figure(row.kind, row.to)}</td>
+                  <td>
+                    <span className="stack">
+                      <span>{restatementReasonLabel(row.reason)}</span>
+                      {row.reason ? <code className="muted small">{row.reason}</code> : null}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </OpsPage>
   );

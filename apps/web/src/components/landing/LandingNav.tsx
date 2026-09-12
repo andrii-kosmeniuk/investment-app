@@ -7,7 +7,7 @@ import { Brand } from "../Brand";
 
 /**
  * Sticky entry header. On wide screens the section links sit inline; under
- * 56rem they fold into a menu behind the button in the upper-right corner.
+ * 65rem they fold into a menu behind the button in the upper-right corner.
  * The menu is a plain dropdown (no focus trap) that closes on Escape, on any
  * link, and on an outside click.
  */
@@ -72,17 +72,21 @@ export function LandingNav() {
       </button>
 
       <nav id={menuId} className="landing__menu" aria-label="Sections (menu)" hidden={!open}>
-        {LANDING_SECTIONS.map((section) => (
-          <a key={section.id} href={`#${section.id}`} onClick={close}>
-            {section.label}
-          </a>
-        ))}
-        <Link href="/sign-in" onClick={close}>
-          Sign in
-        </Link>
-        <Link href="/sign-up" onClick={close} className="button" data-variant="primary">
-          <span className="button__label">Create an account</span>
-        </Link>
+        <div className="landing__menu-sections">
+          {LANDING_SECTIONS.map((section) => (
+            <a key={section.id} href={`#${section.id}`} onClick={close}>
+              {section.label}
+            </a>
+          ))}
+        </div>
+        <div className="landing__menu-auth">
+          <Link href="/sign-up" onClick={close} className="button" data-variant="primary">
+            <span className="button__label">Create an account</span>
+          </Link>
+          <Link href="/sign-in" className="entry__signin" onClick={close}>
+            Sign in
+          </Link>
+        </div>
       </nav>
     </header>
   );

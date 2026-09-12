@@ -8,9 +8,9 @@ import type { PlateFigure } from "../components/landing/Plate";
 
 /** Section anchors shared by the header, the mobile menu and the footer. */
 export const LANDING_SECTIONS = [
-  { id: "how-it-works", label: "How it works" },
-  { id: "models", label: "Four models" },
-  { id: "restatements", label: "Nothing rewritten" },
+  { id: "how-it-works", label: "Steps" },
+  { id: "models", label: "Models" },
+  { id: "restatements", label: "Corrections" },
   { id: "sandbox", label: "Sandbox" },
 ] as const;
 
@@ -21,19 +21,19 @@ export const FIELD_GUIDE: Readonly<Record<"clouds" | "garden", PlateFigure>> = {
 };
 
 export const ONBOARDING_STEPS: readonly { readonly title: string; readonly detail: string }[] = [
-  { title: "Create an account", detail: "Your name, an email and a password. This alone moves no money." },
+  { title: "Open your account", detail: "Name, email, and a password - nothing moves on this step." },
   {
-    title: "Verify your identity",
-    detail: "Persona runs the check. Until it is approved you can look, but not fund or invest.",
+    title: "Confirm your identity",
+    detail: "Persona runs the check. Browse freely until you're approved; then you can fund and invest.",
   },
-  { title: "Link a bank", detail: "Plaid connects the account you will fund from. Linking is not a deposit." },
+  { title: "Link your bank", detail: "Plaid connects the account you'll fund from. Linking is not a deposit." },
   {
-    title: "Add money",
-    detail: "Deposits arrive by ACH and settle before they can be invested; pending, posted and settled are shown apart.",
+    title: "Deposit funds",
+    detail: "ACH deposits settle before they invest. Pending, posted, and settled - shown separately.",
   },
   {
-    title: "Choose a model",
-    detail: "Pick one of four model portfolios. Settled cash is invested to its target weights, less the cash buffer.",
+    title: "Select a portfolio",
+    detail: "One of four fixed models. Settled cash invested to target weights, minus the cash buffer.",
   },
 ];
 
@@ -45,5 +45,5 @@ export const PROVIDERS: readonly { readonly name: string; readonly role: string 
   { name: "Plaid (sandbox)", role: "Bank linking and ACH deposits" },
   { name: "Alpaca Broker (sandbox)", role: "Brokerage accounts and paper orders" },
   { name: "Alpaca market data", role: "Daily closing prices" },
-  { name: "Custodian file", role: "Simulated — reconciled every morning, labelled as simulated" },
+  { name: "Custodian file", role: "Simulated - reconciled every morning, labelled as simulated" },
 ];

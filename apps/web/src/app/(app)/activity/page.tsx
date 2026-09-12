@@ -62,26 +62,28 @@ export default async function ActivityPage() {
                       Reverses entry <code>{row.reversesEntryId}</code>
                     </p>
                   ) : null}
-                  <table className="legs">
-                    <thead>
-                      <tr>
-                        <th scope="col">Account</th>
-                        <th scope="col" className="numeric-col">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {row.legs.map((leg, index) => (
-                        <tr key={`${row.entryId}-${index}`}>
-                          <td>
-                            <code>{leg.accountPath}</code>
-                          </td>
-                          <td className="numeric-col">
-                            <Quantity commodity={leg.commodity} quantity={leg.quantity} />
-                          </td>
+                  <div className="table-scroll">
+                    <table className="legs">
+                      <thead>
+                        <tr>
+                          <th scope="col">Account</th>
+                          <th scope="col" className="numeric-col">Amount</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {row.legs.map((leg, index) => (
+                          <tr key={`${row.entryId}-${index}`}>
+                            <td>
+                              <code>{leg.accountPath}</code>
+                            </td>
+                            <td className="numeric-col">
+                              <Quantity commodity={leg.commodity} quantity={leg.quantity} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                   <p className="muted small">
                     Entry <code>{row.entryId}</code> · kind <code>{row.kind}</code>
                   </p>

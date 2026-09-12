@@ -11,7 +11,7 @@
 
 /* One horizontal gutter for the whole landing surface: header, hero, coin band, sections and footer. */
 :root {
-  --page-gutter: clamp(1.5rem, 6vw, 6rem);
+  --page-gutter: clamp(1.75rem, 5vw, 6rem);
   /* The shared content measure: plates, hero copy, model cards and the closing call sit on the same edges. */
   --measure: 79rem;
   --measure-bleed: 40px;
@@ -186,6 +186,22 @@ code {
   border-radius: var(--radius-pill);
 }
 
+.entry__hero .entry__actions {
+  gap: 1.5rem;
+}
+
+.entry__hero .entry__actions .button[data-variant="primary"] {
+  font-size: 1.0625rem;
+  line-height: 1.2;
+  padding: 0.95rem 1.75rem;
+}
+
+.entry__hero .entry__actions .entry__signin {
+  font-size: 1.0625rem;
+  line-height: 1.2;
+  padding: 0.95rem 1.25rem;
+}
+
 .entry__art {
   min-height: 24rem;
 }
@@ -275,13 +291,19 @@ code {
   z-index: 1;
 }
 
+.landing__main .entry__hero .hero-art__corgi {
+  height: auto;
+  width: min(100%, 44rem);
+}
+
 .entry__hero .hero-art__corgi {
   height: auto;
   width: min(100%, 34rem);
 }
 
-.entry__accent {
+.entry h1 .entry__accent {
   color: var(--accent);
+  font-family: var(--font-display);
   font-style: italic;
 }
 
@@ -351,8 +373,14 @@ code {
   padding-inline: 0;
 }
 
+/* Auth pages have no entry gutter; do not pull the hero outward like the landing strip. */
+.entry--signin .entry__hero {
+  margin-inline: 0;
+  padding-inline: var(--page-gutter);
+}
+
 .entry--signin .entry__nav {
-  padding-inline: var(--align-left);
+  padding-inline: var(--page-gutter);
 }
 
 .entry__hero--auth {
@@ -393,6 +421,14 @@ code {
   text-underline-offset: 0.3em;
 }
 
+.entry--signin .entry__lead {
+  max-width: 42ch;
+}
+
+.entry--signin .signin-form {
+  width: 100%;
+}
+
 /* ---- landing page: field guide (ADR-0006) ------------------------------ */
 
 .landing {
@@ -415,6 +451,10 @@ code {
   z-index: 20;
 }
 
+.landing__header .brand--serif {
+  font-size: calc(1.375rem + 2px);
+}
+
 .landing__links {
   align-items: center;
   display: flex;
@@ -426,7 +466,7 @@ code {
 .landing__links a {
   border-bottom: 1px solid transparent;
   color: var(--ink-default);
-  font-size: 0.875rem;
+  font-size: calc(0.875rem + 2px);
   line-height: 1.2;
   padding: 0.25rem 0;
   text-decoration: none;
@@ -447,9 +487,17 @@ code {
 .landing__auth .button[data-variant="primary"],
 .landing__footer .button[data-variant="primary"] {
   border-radius: var(--radius-pill);
-  font-size: 0.875rem;
   line-height: 1.2;
   padding-block: 0.55rem;
+}
+
+.landing__auth .button[data-variant="primary"],
+.landing__auth .entry__signin {
+  font-size: calc(0.875rem + 2px);
+}
+
+.landing__footer .button[data-variant="primary"] {
+  font-size: 0.875rem;
 }
 
 .landing__burger {
@@ -505,10 +553,6 @@ code {
   min-height: calc(100svh - 4.5rem);
   padding-bottom: clamp(2rem, 4vw, 3rem);
   padding-top: clamp(2rem, 4vw, 3rem);
-}
-
-.entry__secondary {
-  font-size: 0.9375rem;
 }
 
 /* One plate: figure + caption, an ink rule that draws in when it enters view. */
@@ -1127,6 +1171,25 @@ code {
   margin: 0;
 }
 
+.landing__close .entry__actions {
+  gap: 1.5rem;
+}
+
+.landing__close .entry__actions .button[data-variant="primary"],
+.landing__close .entry__actions .entry__signin {
+  font-size: 1.0625rem;
+  font-weight: 560;
+  line-height: 1.2;
+}
+
+.landing__close .entry__actions .button[data-variant="primary"] {
+  padding: 0.95rem 1.75rem;
+}
+
+.landing__close .entry__actions .entry__signin {
+  padding: 0.95rem 1.25rem;
+}
+
 .landing__horizon {
   margin-top: clamp(3rem, 6vw, 5rem);
   overflow: hidden;
@@ -1175,14 +1238,14 @@ code {
   justify-content: flex-end;
 }
 
-.landing__footer nav a:not(.button) {
+.landing__footer nav a:not(.button):not(.entry__signin) {
   color: var(--ink-default);
   font-size: 0.875rem;
   line-height: 1.2;
   text-decoration: none;
 }
 
-.landing__footer nav a:not(.button):hover {
+.landing__footer nav a:not(.button):not(.entry__signin):hover {
   color: var(--ink-strong);
   text-decoration: underline;
   text-underline-offset: 0.3em;
@@ -2265,13 +2328,118 @@ code {
   padding-left: 1.1rem;
 }
 
+/* Horizontal scroll for wide money tables without breaking column layout. */
+.table-scroll {
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table-scroll :is(.data-table, .legs) {
+  min-width: 36rem;
+}
+
 /* ---- responsive ------------------------------------------------------------ */
 
-@media (max-width: 56rem) {
-  .entry__grid,
-  .two-column,
-  .model-grid {
+/*
+ * Below the shared measure width, drop the negative bleed — otherwise
+ * margin-inline eats the page gutter and sections feel cramped (~900–1264px).
+ */
+@media (max-width: 79rem) {
+  .plate,
+  .models,
+  .landing__close {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+
+/*
+ * Landing tablet band (~898–1034px): inline nav and level-map break before
+ * this width, so fold nav, stack the hero, and list the five steps.
+ */
+@media (max-width: 65rem) {
+  .entry__grid {
     grid-template-columns: 1fr;
+  }
+
+  .entry h1 {
+    font-size: clamp(2.5rem, 8vw, 5.5rem);
+    max-width: none;
+  }
+
+  .entry__lead {
+    max-width: none;
+  }
+
+  .landing__main .entry__hero {
+    aspect-ratio: auto;
+    min-height: auto;
+  }
+
+  .entry__hero {
+    gap: 2rem;
+    padding-inline: var(--page-gutter);
+  }
+
+  .entry__hero--auth {
+    min-height: auto;
+    padding-inline: var(--page-gutter);
+  }
+
+  .entry__hero--auth .entry__copy--form {
+    margin-left: 0;
+  }
+
+  .signin-form {
+    max-width: none;
+  }
+
+  .entry--signin .entry__hero--auth {
+    gap: 2rem;
+    grid-template-columns: 1fr;
+    margin-inline: 0;
+    min-height: auto;
+    padding-block: clamp(1.5rem, 4vw, 2.5rem);
+    padding-inline: var(--page-gutter);
+  }
+
+  .entry--signin .entry__copy--form {
+    align-self: start;
+    box-sizing: border-box;
+    margin-left: 0;
+    max-width: 28rem;
+    width: 100%;
+  }
+
+  .entry--signin .entry__copy--form h1 {
+    font-size: clamp(2.25rem, 7vw, 3.5rem);
+  }
+
+  .entry--signin .entry__lead {
+    max-width: none;
+  }
+
+  .entry--signin .entry__hero-art {
+    justify-self: center;
+    min-height: clamp(14rem, 38vh, 22rem);
+  }
+
+  .entry--signin .hero-art__corgi {
+    width: min(78%, 24rem);
+  }
+
+  .entry--signin .entry__hero--auth::before {
+    background: color-mix(in oklch, var(--surface-canvas) 55%, transparent);
+  }
+
+  .entry--signin .signin-form .button {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .entry--signin .entry__nav .entry__signin {
+    flex-shrink: 0;
   }
 
   .entry__art,
@@ -2297,39 +2465,22 @@ code {
     width: min(88%, 28rem);
   }
 
+  .landing__main .entry__hero .hero-art__corgi {
+    width: min(88%, 32rem);
+  }
+
   .entry__hero::before {
     background: color-mix(in oklch, var(--surface-canvas) 55%, transparent);
   }
 
+  .entry__hero .entry__actions {
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+  }
+
   .models__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .steps__map {
-    aspect-ratio: auto;
-  }
-
-  .steps__path {
-    display: none;
-  }
-
-  .steps__list {
-    display: grid;
-    gap: 0.75rem;
-    inset: auto;
-    position: static;
-  }
-
-  .step-card {
-    inset: auto !important;
-    position: relative;
-    transform: none;
-    width: 100%;
-  }
-
-  .step-card:hover,
-  .step-card:focus-within {
-    transform: translateX(0.35rem);
   }
 
   .plate__model-head {
@@ -2337,7 +2488,6 @@ code {
     flex-direction: column;
   }
 
-  /* Landing: section links and account actions fold into the corner menu. */
   .landing__links,
   .landing__auth {
     display: none;
@@ -2346,6 +2496,7 @@ code {
   .landing__header {
     gap: 1rem;
     grid-template-columns: 1fr auto;
+    position: sticky;
   }
 
   .landing__burger {
@@ -2358,28 +2509,55 @@ code {
     border-bottom: 1px solid var(--ink-strong);
     box-shadow: var(--shadow-floating);
     display: grid;
+    gap: 0;
     left: 0;
-    padding: 0.25rem var(--align-left) 1rem;
+    padding: 0.25rem var(--page-gutter) 1.25rem;
     position: absolute;
     right: 0;
     top: 100%;
   }
 
-  .landing__menu a {
+  .landing__menu-sections {
+    display: grid;
+  }
+
+  .landing__menu-sections a {
     border-bottom: 1px solid var(--line);
     color: var(--ink-strong);
     font-size: 1rem;
+    line-height: 1.2;
     padding: 0.9rem 0;
     text-decoration: none;
   }
 
-  .landing__menu a:last-child {
+  .landing__menu-sections a:last-child {
     border-bottom: 0;
   }
 
-  .landing__menu .landing__menu-cta {
-    color: var(--accent-text);
+  .landing__menu-auth {
+    border-top: 1px solid var(--ink-strong);
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding-top: 1rem;
+  }
+
+  .landing__menu-auth .button[data-variant="primary"],
+  .landing__menu-auth .entry__signin {
+    align-items: center;
+    box-sizing: border-box;
+    display: inline-flex;
+    font-size: calc(0.875rem + 2px);
     font-weight: 560;
+    justify-content: center;
+    line-height: 1.2;
+    padding: 0.85rem 1.25rem;
+    text-align: center;
+    width: 100%;
+  }
+
+  .landing__menu-auth .button[data-variant="primary"] {
+    border-radius: var(--radius-pill);
   }
 
   .landing__main .entry__grid {
@@ -2440,7 +2618,295 @@ code {
   }
 
   .landing__footer nav {
+    gap: 0.75rem 1rem;
     justify-content: flex-start;
+  }
+
+  .steps,
+  .models,
+  .plate {
+    scroll-margin-top: 4.5rem;
+  }
+}
+
+/*
+ * Medium desktop (~1042–1700px): the level-map path and two-column hero only
+ * align once the measure is truly wide; until then keep the stacked hero and
+ * step list that already work on tablet.
+ */
+@media (min-width: 65.0625rem) and (max-width: 106.25rem) {
+  .landing__main .entry__grid {
+    min-height: auto;
+    padding-bottom: clamp(2rem, 4vw, 3rem);
+    padding-top: clamp(2rem, 4vw, 3rem);
+  }
+
+  .landing__main .entry__hero {
+    align-content: center;
+    aspect-ratio: auto;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    /* Taller than the old cap at ~1044px, but capped below the full aspect hero at 1700px+. */
+    min-height: clamp(38rem, calc(100vw * 571 / 1024), 50rem);
+  }
+
+  .landing__main .entry__hero .entry__copy {
+    align-self: center;
+    grid-column: 1;
+    grid-row: 1;
+    margin-left: clamp(0.5rem, 3vw, 2.5rem);
+  }
+
+  .landing__main .entry__hero .entry__hero-art,
+  .landing__main .entry__hero .hero-art {
+    min-height: 0;
+  }
+
+  .landing__main .entry__hero .entry__hero-art {
+    align-self: center;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .landing__main .entry__hero .hero-art__corgi {
+    width: min(100%, 30rem);
+  }
+
+  .landing__main .entry__hero::before {
+    background: linear-gradient(
+      to right,
+      color-mix(in oklch, var(--surface-canvas) 72%, transparent) 0%,
+      color-mix(in oklch, var(--surface-canvas) 55%, transparent) 45%,
+      color-mix(in oklch, var(--surface-canvas) 25%, transparent) 70%,
+      transparent 100%
+    );
+  }
+
+  .landing__main .entry__hero .entry__actions {
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem 1.25rem;
+  }
+
+  .landing__main .entry__hero h1 {
+    font-size: clamp(2.5rem, 4.5vw, 4.25rem);
+  }
+}
+
+/*
+ * Wide medium desktop (~1300–1700px): pin copy left and the corgi on the right
+ * in one row; scale the cut-out up toward the full-desktop size.
+ */
+@media (min-width: 81.25rem) and (max-width: 106.25rem) {
+  .landing__main .entry__hero {
+    align-items: center;
+    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+    grid-template-rows: auto;
+  }
+
+  .landing__main .entry__hero .entry__copy {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .landing__main .entry__hero .entry__hero-art,
+  .landing__main .entry__hero .hero-art {
+    min-height: 0;
+  }
+
+  .landing__main .entry__hero .entry__hero-art {
+    align-self: center;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .landing__main .entry__hero .hero-art__corgi {
+    width: min(100%, clamp(44rem, calc(40rem + (100vw - 81.25rem) * 0.42), 56rem));
+  }
+
+  .entry--signin .entry__hero--auth {
+    align-items: center;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    grid-template-rows: auto;
+  }
+
+  .entry--signin .entry__copy--form {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .entry--signin .entry__hero-art,
+  .entry--signin .hero-art {
+    min-height: 0;
+  }
+
+  .entry--signin .entry__hero-art {
+    align-self: center;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .entry--signin .hero-art__corgi {
+    width: min(100%, clamp(36rem, calc(32rem + (100vw - 81.25rem) * 0.32), 46rem));
+  }
+}
+
+/* Sign-in / sign-up on medium desktop: form left, corgi right, no full-viewport lock. */
+@media (min-width: 65.0625rem) and (max-width: 106.25rem) {
+  .entry--signin .entry__hero--auth {
+    align-content: center;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    margin-inline: 0;
+    min-height: auto;
+    padding-block: clamp(2rem, 4vw, 3rem);
+    padding-inline: var(--page-gutter);
+  }
+
+  .entry--signin .entry__copy--form {
+    grid-column: 1;
+    grid-row: 1;
+    margin-left: clamp(0.5rem, 3vw, 2rem);
+    max-width: 26rem;
+  }
+
+  .entry--signin .entry__hero-art,
+  .entry--signin .hero-art {
+    min-height: 0;
+  }
+
+  .entry--signin .entry__hero-art {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .entry--signin .hero-art__corgi {
+    width: min(100%, clamp(18rem, calc(16rem + (100vw - 65rem) * 0.12), 24rem));
+  }
+
+  .entry--signin .entry__hero--auth::before {
+    background: linear-gradient(
+      to right,
+      color-mix(in oklch, var(--surface-canvas) 72%, transparent) 0%,
+      color-mix(in oklch, var(--surface-canvas) 50%, transparent) 50%,
+      transparent 100%
+    );
+  }
+}
+
+/* The dashed step path is tuned for a wide measure; below ~1700px use the list. */
+@media (max-width: 106.25rem) {
+  .steps__map {
+    aspect-ratio: auto;
+  }
+
+  .steps__path {
+    display: none;
+  }
+
+  .steps__list {
+    display: grid;
+    gap: 0.75rem;
+    inset: auto;
+    position: static;
+  }
+
+  .step-card {
+    inset: auto !important;
+    position: relative;
+    transform: none;
+    width: 100%;
+  }
+
+  .step-card:hover,
+  .step-card:focus-within {
+    transform: translateX(0.35rem);
+  }
+}
+
+/* App shell and shared layouts: stack below ~896px. */
+@media (max-width: 56rem) {
+  .two-column,
+  .model-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shell__top {
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    min-height: auto;
+    padding-block: 0.75rem;
+  }
+
+  .shell__breadcrumb {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .shell__content {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+
+  .section__heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .activity summary {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .activity__amount {
+    margin-left: auto;
+  }
+
+  .transfer__summary {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .open-orders li {
+    gap: 0.5rem;
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .ops-content {
+    padding: 1.5rem var(--page-gutter) 3rem;
+  }
+
+  .ops-shell aside {
+    padding: 1rem var(--page-gutter);
+  }
+
+  .ops-shell aside nav {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    margin-top: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.25rem;
+  }
+
+  .ops-shell aside nav a {
+    flex: none;
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.75rem;
+    white-space: nowrap;
+  }
+
+  .ops-shell__account {
+    margin-top: 1rem;
   }
 
   .shell {
@@ -2501,10 +2967,6 @@ code {
     border-right: 0;
   }
 
-  .ops-shell aside nav {
-    display: none;
-  }
-
   .ops-metrics {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -2515,6 +2977,169 @@ code {
 
   .break-row {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Phone: full-width CTAs, single-column cards, tighter type. */
+@media (max-width: 40rem) {
+  :root {
+    --page-gutter: 1.25rem;
+  }
+
+  .entry h1 {
+    font-size: clamp(2.125rem, 10vw, 3.25rem);
+    line-height: 1.02;
+  }
+
+  .entry__actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .entry__actions .button,
+  .entry__actions .entry__signin {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  .entry__hero .entry__actions .button[data-variant="primary"],
+  .entry__hero .entry__actions .entry__signin,
+  .landing__close .entry__actions .button[data-variant="primary"],
+  .landing__close .entry__actions .entry__signin {
+    padding-block: 0.85rem;
+  }
+
+  .entry__hero-art {
+    min-height: clamp(12rem, 38vw, 18rem);
+  }
+
+  .hero-art__corgi {
+    width: min(78%, 20rem);
+  }
+
+  .entry__hero--auth .entry__hero-art {
+    min-height: clamp(10rem, 32vw, 14rem);
+  }
+
+  .coin-marquee__coin {
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
+  .models__grid,
+  .model-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing__footer nav {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .landing__footer nav .button,
+  .landing__footer nav .entry__signin {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  .landing__header {
+    min-height: 4rem;
+  }
+
+  .plate__caption h2,
+  .steps__head h2,
+  .landing__close h2 {
+    font-size: clamp(1.875rem, 8vw, 2.75rem);
+  }
+
+  .shell-nav--bottom a {
+    font-size: 0.6875rem;
+    padding: 0.45rem 0.25rem;
+  }
+
+  .shell__notice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .shell__notice .button {
+    width: 100%;
+  }
+
+  .confirm-sheet__actions {
+    flex-direction: column;
+  }
+
+  .confirm-sheet__actions .button {
+    width: 100%;
+  }
+
+  .deposit-form .button,
+  .signin-form .button {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .ops-metrics,
+  .break-row {
+    grid-template-columns: 1fr;
+  }
+
+  .bank-list li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .entry__nav {
+    gap: 0.75rem;
+    padding-inline: var(--page-gutter);
+  }
+
+  .entry--signin .entry__nav {
+    flex-wrap: wrap;
+    min-height: auto;
+    padding-block: 0.75rem;
+    padding-inline: var(--page-gutter);
+  }
+
+  .entry--signin .brand--serif {
+    font-size: 1.25rem;
+  }
+
+  .entry--signin .entry__nav .entry__signin {
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .entry--signin .entry__copy--form h1 {
+    font-size: clamp(2rem, 9vw, 2.75rem);
+  }
+
+  .entry--signin .entry__hero--auth {
+    padding-block: 1.25rem 2rem;
+    padding-inline: var(--page-gutter);
+  }
+
+  .entry--signin .entry__copy--form {
+    max-width: none;
+  }
+
+  .entry--signin .entry__hero-art {
+    min-height: clamp(10rem, 34vw, 16rem);
+  }
+
+  .entry--signin .hero-art__corgi {
+    width: min(72%, 18rem);
+  }
+
+  .entry--signin .signin-form {
+    gap: 1rem;
+    margin-top: 1.5rem;
   }
 }
 

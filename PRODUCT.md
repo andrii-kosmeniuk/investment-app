@@ -52,7 +52,7 @@ Open decisions are recorded in `docs/decisions/ASSUMPTIONS.md`.
 
 ## Brand Commitments
 
-Working product name: Corgi Invest. The interface must be highly crafted,
+Working product name: Corgi Ledger. The interface must be highly crafted,
 trustworthy, restrained, smooth, and consistent—never a generic generated
 dashboard. Motion must communicate state or continuity, not decorate.
 

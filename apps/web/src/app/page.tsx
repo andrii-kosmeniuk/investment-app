@@ -15,6 +15,7 @@ import {
   ONBOARDING_STEPS,
   PROVIDERS,
 } from "../lib/landing-copy";
+import { PRODUCT_NAME } from "../lib/product";
 import { anonymousApi } from "../server/api";
 import { readSessionToken } from "../server/session";
 
@@ -88,17 +89,20 @@ export default async function EntryPage() {
           />
           <div className="entry__copy">
             <h1 id="hero-title">
-              A clearer view of your <em className="entry__accent">investments.</em>
+              One Space,
+              <br />
+              for all <em className="entry__accent">Investments.</em>
             </h1>
             <p className="entry__lead">
-              Fund a model portfolio from your bank, watch every order land, and see exactly what changed, when, and
-              what was known at the time.
+              Fund from your bank, watch every order land, and see exactly what changed, when, and what was known,
+              <br />
+              all in one workspace.
             </p>
             <div className="entry__actions">
               <Link href="/sign-up" className="button" data-variant="primary">
                 <span className="button__label">Create an account</span>
               </Link>
-              <Link href="/sign-in" className="text-link entry__secondary">
+              <Link href="/sign-in" className="entry__signin">
                 Sign in
               </Link>
             </div>
@@ -111,10 +115,11 @@ export default async function EntryPage() {
         <section id="how-it-works" className="steps" aria-labelledby="how-it-works-title">
           <div className="steps__head">
             <span className="section-numeral">I</span>
-            <h2 id="how-it-works-title">Five steps, in order.</h2>
+            <h2 id="how-it-works-title">Get Started Instantly</h2>
             <p>
-              Each step is confirmed by the provider or by the ledger — never by a redirect. You can look around after the
-              first one; money moves only after the second.
+              No confusion, no waiting. Browse in minutes.
+              <br />
+              Money moves only when you’re verified and ready.
             </p>
           </div>
           <div className="steps__map">
@@ -144,11 +149,11 @@ export default async function EntryPage() {
         <section id="models" className="models" aria-labelledby="models-title">
           <div className="steps__head">
             <span className="section-numeral">II</span>
-            <h2 id="models-title">Four model portfolios, nothing else.</h2>
+            <h2 id="models-title">Model portfolios for everyone, in one room</h2>
             <p>
-              Each model is a fixed set of funds with target weights. Your settled cash is invested to those weights, less
-              a small cash buffer, and the portfolio is rebalanced back to them. Risk is described in words, never as safe
-              or unsafe.
+              No confusion, no fine print. Four fixed models, real target weights.
+              <br />
+              Settled cash invested to plan - all in one room.
             </p>
           </div>
           {models && models.length > 0 ? (
@@ -198,10 +203,11 @@ export default async function EntryPage() {
           )}
         </section>
 
-        <Plate id="restatements" numeral="III" title="Corrected, never rewritten." figure={FIELD_GUIDE.clouds}>
+        <Plate id="restatements" numeral="III" title="See exactly what changed" figure={FIELD_GUIDE.clouds}>
           <p>
-            A late dividend or a corrected close can change a number you already saw. We publish the corrected figure,
-            keep the published one reachable, and show both — each with the date it was known.
+            No confusion, no silent rewrites. Published and corrected, side by side.
+            <br />
+            Every version on the ledger - dated when it was known.
           </p>
           <div className="plate__compare" role="group" aria-label="Illustration of a restated return">
             <div>
@@ -221,11 +227,11 @@ export default async function EntryPage() {
           <p className="plate__note">Illustrative figures. Your own history shows every version with its reason.</p>
         </Plate>
 
-        <Plate id="sandbox" numeral="IV" title="Sandbox, labelled as such." figure={FIELD_GUIDE.garden} flip>
+        <Plate id="sandbox" numeral="IV" title="Built on Sandboxes" figure={FIELD_GUIDE.garden} flip>
           <p>
-            This is a trial build on provider sandboxes. No real money moves, and every screen says so. Where an
-            integration is unavailable, the product shows an honest unavailable state instead of a success it cannot
-            prove.
+            No real money, no fake success. Every provider named - every gap shown honestly.
+            <br />
+            Unavailable beats unproven, every time.
           </p>
           <dl className="plate__providers">
             {PROVIDERS.map((provider) => (
@@ -241,16 +247,17 @@ export default async function EntryPage() {
         </Plate>
 
         <section className="landing__close" aria-labelledby="close-title">
-          <h2 id="close-title">Begin with your name.</h2>
+          <h2 id="close-title">Start in under a minute.</h2>
           <p className="entry__lead">
-            Creating an account takes a minute and moves no money. Verification, bank linking and funding follow — in that
-            order, and only when you choose.
+            No confusion, no commitment. Create an account - it moves no money.
+            <br />
+            Verify, link your bank, and fund when you&apos;re ready.
           </p>
           <div className="entry__actions">
             <Link href="/sign-up" className="button" data-variant="primary">
               <span className="button__label">Create an account</span>
             </Link>
-            <Link href="/sign-in" className="text-link entry__secondary">
+            <Link href="/sign-in" className="entry__signin">
               Sign in
             </Link>
           </div>
@@ -286,13 +293,15 @@ export default async function EntryPage() {
               {section.label}
             </a>
           ))}
-          <Link href="/sign-in">Sign in</Link>
+          <Link href="/sign-in" className="entry__signin">
+            Sign in
+          </Link>
           <Link href="/sign-up" className="button" data-variant="primary">
             <span className="button__label">Create an account</span>
           </Link>
         </nav>
         <p className="muted">
-          Corgi Invest · work-trial build. Sandbox providers only; nothing on this site is an offer, a recommendation, or
+          {PRODUCT_NAME} · work-trial build. Sandbox providers only; nothing on this site is an offer, a recommendation, or
           a promise of any outcome.
         </p>
       </footer>

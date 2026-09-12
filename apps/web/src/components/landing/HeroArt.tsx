@@ -13,7 +13,7 @@ export function HeroArt({ priority = false, className }: { readonly priority?: b
         width={547}
         height={456}
         priority={priority}
-        sizes="(min-width: 56rem) 40vw, 80vw"
+        sizes="(min-width: 106.25rem) 44rem, (min-width: 81.25rem) 56rem, (min-width: 65rem) 30rem, 80vw"
         className="hero-art__corgi"
       />
     </div>

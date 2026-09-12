@@ -128,28 +128,30 @@ export default async function OverviewPage() {
               {!view.model ? " to invest your settled cash." : ""}
             </p>
           ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th scope="col">Symbol</th>
-                  <th scope="col" className="numeric-col">Units</th>
-                  <th scope="col" className="numeric-col">Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {view.positions.map((position) => (
-                  <tr key={position.symbol}>
-                    <th scope="row">{position.symbol}</th>
-                    <td className="numeric-col">
-                      <Units micro={units(position.unitsMicro)} />
-                    </td>
-                    <td className="numeric-col">
-                      {position.valueCents !== null ? <Money cents={cents(position.valueCents)} /> : <span className="muted">Price unavailable</span>}
-                    </td>
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Symbol</th>
+                    <th scope="col" className="numeric-col">Units</th>
+                    <th scope="col" className="numeric-col">Value</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {view.positions.map((position) => (
+                    <tr key={position.symbol}>
+                      <th scope="row">{position.symbol}</th>
+                      <td className="numeric-col">
+                        <Units micro={units(position.unitsMicro)} />
+                      </td>
+                      <td className="numeric-col">
+                        {position.valueCents !== null ? <Money cents={cents(position.valueCents)} /> : <span className="muted">Price unavailable</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
       )}

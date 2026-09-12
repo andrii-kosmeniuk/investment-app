@@ -89,42 +89,44 @@ export default async function PerformancePage({ searchParams }: { readonly searc
         {series.length === 0 ? (
           <p className="muted">No valuations yet.</p>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th scope="col">Date</th>
-                <th scope="col" className="numeric-col">Value</th>
-                <th scope="col" className="numeric-col">Cash</th>
-                <th scope="col">Status</th>
-                <th scope="col">Computed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {series.map((point) => (
-                <tr key={point.asOfDate}>
-                  <th scope="row">{point.asOfDate}</th>
-                  <td className="numeric-col">
-                    <Money cents={cents(point.valueCents)} />
-                  </td>
-                  <td className="numeric-col">
-                    <Money cents={cents(point.cashCents)} />
-                  </td>
-                  <td>
-                    <span className="stack">
-                      <StatusPill tone={point.status === "final" ? "positive" : "warning"}>{point.status === "final" ? "Final" : "Provisional"}</StatusPill>
-                      {point.version > 1 ? <span className="muted small">version {point.version}</span> : null}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="stack">
-                      <Timestamp value={point.computedAt} />
-                      <span className="muted small">{restatementReasonLabel(point.reason)}</span>
-                    </span>
-                  </td>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col" className="numeric-col">Value</th>
+                  <th scope="col" className="numeric-col">Cash</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Computed</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {series.map((point) => (
+                  <tr key={point.asOfDate}>
+                    <th scope="row">{point.asOfDate}</th>
+                    <td className="numeric-col">
+                      <Money cents={cents(point.valueCents)} />
+                    </td>
+                    <td className="numeric-col">
+                      <Money cents={cents(point.cashCents)} />
+                    </td>
+                    <td>
+                      <span className="stack">
+                        <StatusPill tone={point.status === "final" ? "positive" : "warning"}>{point.status === "final" ? "Final" : "Provisional"}</StatusPill>
+                        {point.version > 1 ? <span className="muted small">version {point.version}</span> : null}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="stack">
+                        <Timestamp value={point.computedAt} />
+                        <span className="muted small">{restatementReasonLabel(point.reason)}</span>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
@@ -136,33 +138,35 @@ export default async function PerformancePage({ searchParams }: { readonly searc
         {view.restatements.length === 0 ? (
           <p className="muted">None. Every figure you have been shown still stands.</p>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th scope="col">When</th>
-                <th scope="col">What</th>
-                <th scope="col" className="numeric-col">Was</th>
-                <th scope="col" className="numeric-col">Now</th>
-                <th scope="col">Why</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.restatements.map((row) => (
-                <tr key={`${row.kind}-${row.asOfDate}-${row.period ?? ""}-${row.version}`}>
-                  <td>
-                    <Timestamp value={row.computedAt} />
-                  </td>
-                  <td>
-                    {row.kind === "valuation" ? `Value at ${row.asOfDate} close` : `${PERIOD_LABEL[row.period ?? "inception"]} return to ${row.asOfDate}`}
-                    <span className="muted small"> · v{row.version}</span>
-                  </td>
-                  <td className="numeric-col numeric">{figure(row.kind, row.from)}</td>
-                  <td className="numeric-col numeric">{figure(row.kind, row.to)}</td>
-                  <td>{restatementReasonLabel(row.reason)}</td>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">When</th>
+                  <th scope="col">What</th>
+                  <th scope="col" className="numeric-col">Was</th>
+                  <th scope="col" className="numeric-col">Now</th>
+                  <th scope="col">Why</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {view.restatements.map((row) => (
+                  <tr key={`${row.kind}-${row.asOfDate}-${row.period ?? ""}-${row.version}`}>
+                    <td>
+                      <Timestamp value={row.computedAt} />
+                    </td>
+                    <td>
+                      {row.kind === "valuation" ? `Value at ${row.asOfDate} close` : `${PERIOD_LABEL[row.period ?? "inception"]} return to ${row.asOfDate}`}
+                      <span className="muted small"> · v{row.version}</span>
+                    </td>
+                    <td className="numeric-col numeric">{figure(row.kind, row.from)}</td>
+                    <td className="numeric-col numeric">{figure(row.kind, row.to)}</td>
+                    <td>{restatementReasonLabel(row.reason)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </>

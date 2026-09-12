@@ -114,21 +114,23 @@ export function PerformanceCard({
         treated as cash flows; dividends count as return.
       </p>
 
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th scope="col">Period</th>
-            <th scope="col" className="numeric-col">Time-weighted</th>
-            <th scope="col" className="numeric-col">Money-weighted</th>
-            <th scope="col" className="numeric-col">Net flows</th>
-          </tr>
-        </thead>
-        <tbody>
-          {performance.returns.map((row) => (
-            <ReturnRow key={row.period} row={row} />
-          ))}
-        </tbody>
-      </table>
+      <div className="table-scroll">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Period</th>
+              <th scope="col" className="numeric-col">Time-weighted</th>
+              <th scope="col" className="numeric-col">Money-weighted</th>
+              <th scope="col" className="numeric-col">Net flows</th>
+            </tr>
+          </thead>
+          <tbody>
+            {performance.returns.map((row) => (
+              <ReturnRow key={row.period} row={row} />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

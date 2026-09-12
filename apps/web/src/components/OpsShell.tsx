@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PRODUCT_NAME } from "../lib/product";
 import type { ReactNode } from "react";
 
 export const OPS_NAV = [
@@ -16,7 +17,7 @@ export function OpsShell({ current, children, account }: { readonly current: str
     <main className="ops-shell" data-theme="ops">
       <aside>
         <Link href="/" className="wordmark">
-          Corgi Invest
+          {PRODUCT_NAME}
         </Link>
         <nav aria-label="Operations">
           {OPS_NAV.map((item) => (

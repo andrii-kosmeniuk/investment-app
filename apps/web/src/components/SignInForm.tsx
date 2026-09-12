@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { Button, Field, InlineAlert } from "@corgi/ui";
+import { PRODUCT_NAME } from "../lib/product";
 import { type ActionResult, signInAction } from "../server/actions";
 
 export function SignInForm({ expired }: { readonly expired: boolean }) {
@@ -36,7 +37,7 @@ export function SignInForm({ expired }: { readonly expired: boolean }) {
         Sign in
       </Button>
       <p className="signin-form__switch">
-        New to Corgi Invest? <Link href="/sign-up">Create an account</Link>
+        New to {PRODUCT_NAME}? <Link href="/sign-up">Create an account</Link>
       </p>
     </form>
   );

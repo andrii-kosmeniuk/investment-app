@@ -112,44 +112,46 @@ export default async function PortfolioPage() {
             action={available <= 0n ? <Link href="/transfers" className="button" data-variant="secondary"><span className="button__label">Add money</span></Link> : null}
           />
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th scope="col">Symbol</th>
-                <th scope="col" className="numeric-col">Units</th>
-                <th scope="col" className="numeric-col">Price</th>
-                <th scope="col" className="numeric-col">Value</th>
-                <th scope="col" className="numeric-col">Weight / target</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.positions.map((position) => (
-                <tr key={position.symbol}>
-                  <th scope="row">{position.symbol}</th>
-                  <td className="numeric-col">
-                    <Units micro={units(position.unitsMicro)} />
-                  </td>
-                  <td className="numeric-col">
-                    {position.price ? (
-                      <span className="stack">
-                        <span className="numeric">${position.price.value}</span>
-                        <span className="muted small">
-                          {priceStatusLabel(position.price.status)} {position.price.asOfDate}
-                        </span>
-                      </span>
-                    ) : (
-                      <span className="muted">Price unavailable</span>
-                    )}
-                  </td>
-                  <td className="numeric-col">{position.valueCents !== null ? <Money cents={cents(position.valueCents)} /> : <span className="muted">—</span>}</td>
-                  <td className="numeric-col">
-                    {position.actualWeightBps !== null ? bps(position.actualWeightBps) : "—"}
-                    {position.targetWeightBps !== null ? <span className="muted"> / {bps(position.targetWeightBps)}</span> : null}
-                  </td>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Symbol</th>
+                  <th scope="col" className="numeric-col">Units</th>
+                  <th scope="col" className="numeric-col">Price</th>
+                  <th scope="col" className="numeric-col">Value</th>
+                  <th scope="col" className="numeric-col">Weight / target</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {view.positions.map((position) => (
+                  <tr key={position.symbol}>
+                    <th scope="row">{position.symbol}</th>
+                    <td className="numeric-col">
+                      <Units micro={units(position.unitsMicro)} />
+                    </td>
+                    <td className="numeric-col">
+                      {position.price ? (
+                        <span className="stack">
+                          <span className="numeric">${position.price.value}</span>
+                          <span className="muted small">
+                            {priceStatusLabel(position.price.status)} {position.price.asOfDate}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="muted">Price unavailable</span>
+                      )}
+                    </td>
+                    <td className="numeric-col">{position.valueCents !== null ? <Money cents={cents(position.valueCents)} /> : <span className="muted">—</span>}</td>
+                    <td className="numeric-col">
+                      {position.actualWeightBps !== null ? bps(position.actualWeightBps) : "—"}
+                      {position.targetWeightBps !== null ? <span className="muted"> / {bps(position.targetWeightBps)}</span> : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         {view.openOrders.length > 0 ? (
           <ul className="open-orders">

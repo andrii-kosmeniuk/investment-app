@@ -29,47 +29,49 @@ export default async function EventsPage() {
       ) : events.data!.rows.length === 0 ? (
         <p className="muted">No events yet. Fund a deposit or place an order and the providers will start talking.</p>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th scope="col">Received</th>
-              <th scope="col">Provider</th>
-              <th scope="col">Type</th>
-              <th scope="col">Dedupe key</th>
-              <th scope="col">Outcome</th>
-              <th scope="col">Replay</th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.data!.rows.map((row) => {
-              const last = row.attempts.at(-1);
-              return (
-                <tr key={row.id}>
-                  <td>
-                    <Timestamp value={row.receivedAt} />
-                  </td>
-                  <td>
-                    {row.provider}
-                    {row.signatureValid ? null : <StatusPill tone="negative">unsigned</StatusPill>}
-                  </td>
-                  <td>{row.type}</td>
-                  <td>
-                    <code className="small">{row.dedupeKey}</code>
-                  </td>
-                  <td>
-                    <span className="stack">
-                      <StatusPill tone={OUTCOME_TONE[row.outcome]}>{row.outcome}</StatusPill>
-                      {last?.error ? <span className="muted small">{last.error}</span> : null}
-                    </span>
-                  </td>
-                  <td>
-                    <ReplayEventButton eventId={row.id} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Received</th>
+                <th scope="col">Provider</th>
+                <th scope="col">Type</th>
+                <th scope="col">Dedupe key</th>
+                <th scope="col">Outcome</th>
+                <th scope="col">Replay</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.data!.rows.map((row) => {
+                const last = row.attempts.at(-1);
+                return (
+                  <tr key={row.id}>
+                    <td>
+                      <Timestamp value={row.receivedAt} />
+                    </td>
+                    <td>
+                      {row.provider}
+                      {row.signatureValid ? null : <StatusPill tone="negative">unsigned</StatusPill>}
+                    </td>
+                    <td>{row.type}</td>
+                    <td>
+                      <code className="small">{row.dedupeKey}</code>
+                    </td>
+                    <td>
+                      <span className="stack">
+                        <StatusPill tone={OUTCOME_TONE[row.outcome]}>{row.outcome}</StatusPill>
+                        {last?.error ? <span className="muted small">{last.error}</span> : null}
+                      </span>
+                    </td>
+                    <td>
+                      <ReplayEventButton eventId={row.id} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </OpsPage>
   );

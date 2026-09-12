@@ -59,7 +59,7 @@ export class PlaidFundingAdapter implements FundingPort {
     const response = await this.#request<{ link_token: string }>("/link/token/create", {
       method: "POST",
       body: this.#body({
-        client_name: "Corgi Invest",
+        client_name: "Corgi Ledger",
         user: { client_user_id: customerId },
         products: ["auth", "transfer"],
         country_codes: ["US"],
@@ -119,7 +119,7 @@ export class PlaidFundingAdapter implements FundingPort {
         access_token: input.accessToken,
         account_id: input.providerAccountId,
         authorization_id: authorization.authorization.id,
-        description: "Corgi Inv",
+        description: "Corgi Ldg",
       }),
     });
     return { transferId: response.transfer.id, status: response.transfer.status };

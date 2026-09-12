@@ -103,41 +103,43 @@ export default async function ReconciliationPage() {
           <div className="section-heading">
             <h2>Closed</h2>
           </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th scope="col">Break</th>
-                <th scope="col">Status</th>
-                <th scope="col">Closed by</th>
-                <th scope="col">Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {closed.map((brk) => (
-                <tr key={brk.id}>
-                  <td>
-                    {reconCategoryLabel(brk.category)} · {brk.key} · {shortId(brk.customerId)}
-                  </td>
-                  <td>
-                    <StatusPill tone={breakStatusTone(brk.status)}>{brk.status}</StatusPill>
-                  </td>
-                  <td>
-                    {brk.resolvedBy?.displayName ?? "—"}
-                    {brk.resolvedAt ? (
-                      <span className="muted small">
-                        {" "}
-                        · <Timestamp value={brk.resolvedAt} />
-                      </span>
-                    ) : null}
-                  </td>
-                  <td>
-                    {brk.resolutionNote ?? "—"}
-                    {brk.resolutionEntryId ? <code className="muted small"> entry {shortId(brk.resolutionEntryId)}</code> : null}
-                  </td>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Break</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Closed by</th>
+                  <th scope="col">Note</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {closed.map((brk) => (
+                  <tr key={brk.id}>
+                    <td>
+                      {reconCategoryLabel(brk.category)} · {brk.key} · {shortId(brk.customerId)}
+                    </td>
+                    <td>
+                      <StatusPill tone={breakStatusTone(brk.status)}>{brk.status}</StatusPill>
+                    </td>
+                    <td>
+                      {brk.resolvedBy?.displayName ?? "—"}
+                      {brk.resolvedAt ? (
+                        <span className="muted small">
+                          {" "}
+                          · <Timestamp value={brk.resolvedAt} />
+                        </span>
+                      ) : null}
+                    </td>
+                    <td>
+                      {brk.resolutionNote ?? "—"}
+                      {brk.resolutionEntryId ? <code className="muted small"> entry {shortId(brk.resolutionEntryId)}</code> : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       ) : null}
 
@@ -148,32 +150,34 @@ export default async function ReconciliationPage() {
         {runs.length === 0 ? (
           <p className="muted">No runs yet.</p>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th scope="col">Business date</th>
-                <th scope="col">File</th>
-                <th scope="col">Status</th>
-                <th scope="col">Started</th>
-              </tr>
-            </thead>
-            <tbody>
-              {runs.map((run) => (
-                <tr key={run.id}>
-                  <td>{run.businessDate}</td>
-                  <td>
-                    {run.fileBusinessDate ?? "—"} <span className="muted small">{run.fileSource ?? ""}</span>
-                  </td>
-                  <td>
-                    <StatusPill tone={run.status === "completed" ? "positive" : run.status === "failed" ? "negative" : "neutral"}>{run.status}</StatusPill>
-                  </td>
-                  <td>
-                    <Timestamp value={run.startedAt} />
-                  </td>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Business date</th>
+                  <th scope="col">File</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Started</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {runs.map((run) => (
+                  <tr key={run.id}>
+                    <td>{run.businessDate}</td>
+                    <td>
+                      {run.fileBusinessDate ?? "—"} <span className="muted small">{run.fileSource ?? ""}</span>
+                    </td>
+                    <td>
+                      <StatusPill tone={run.status === "completed" ? "positive" : run.status === "failed" ? "negative" : "neutral"}>{run.status}</StatusPill>
+                    </td>
+                    <td>
+                      <Timestamp value={run.startedAt} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </OpsPage>

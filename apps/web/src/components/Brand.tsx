@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PRODUCT_NAME } from "../lib/product";
 
 /** 8×8 pixel emblem — diamond outline with a 2×2 centre block. Render at 16 or 24 px. */
 const EMBLEM_PIXELS = [
@@ -35,7 +36,7 @@ export function Brand({ href = "/", serif = false }: { readonly href?: string; r
   return (
     <Link href={href} className={serif ? "brand brand--serif" : "brand"}>
       <Emblem />
-      Corgi Invest
+      {PRODUCT_NAME}
     </Link>
   );
 }

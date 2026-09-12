@@ -1,4 +1,4 @@
-# Corgi Invest
+# Corgi Ledger
 
 A US retail-investing work trial built around immutable accounting, live sandbox
 integrations, bitemporal performance, and operational reconciliation.
